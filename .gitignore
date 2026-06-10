@@ -1,0 +1,29 @@
+# Secrets
+.env
+*.tfvars
+!example.tfvars
+*.pem
+*.key
+
+# Terraform / OpenTofu
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Ansible
+*.retry
+
+# Synthea generated output (can be large; regenerate from config)
+synthea/output/
+synthea/*.zip
+
+# Docker / runtime
+**/data/
+**/volumes/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
