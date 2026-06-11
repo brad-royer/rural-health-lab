@@ -411,3 +411,5 @@ it explicitly, the same as you would `terraform destroy`.
   the host.
 - **Next increment:** Synthea synthetic population data and/or begin
   Mirth Connect routing between hub and spokes per the Phase 1 roadmap.
+  See `docs/runbooks/phase1-synthea.md` for generating and loading a
+  synthetic rural-TX population (Phase 1.4, issue #7).

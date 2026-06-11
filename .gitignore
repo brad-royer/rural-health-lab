@@ -18,6 +18,10 @@ crash.log
 synthea/output/
 synthea/*.zip
 
+# Synthea jar cache (downloaded by scripts/generate-synthea.sh; large binary,
+# reproducible via SYNTHEA_VERSION pin — not committed)
+synthea/.cache/
+
 # Docker / runtime
 **/data/
 **/volumes/
