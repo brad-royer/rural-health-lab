@@ -1,21 +1,55 @@
-# Phase 1.1 — Walking skeleton
+# Phase 1.2 — Postgres-backed HAPI hub
 #
-# Single HAPI FHIR R4 server acting as the CAH "hub". No Postgres, no spokes,
-# no Mirth/Keycloak/Medplum yet — those arrive in later increments.
+# Builds on the Phase 1.1 walking skeleton (single HAPI FHIR R4 server with
+# ephemeral in-memory H2). This increment swaps H2 for Postgres so FHIR
+# resources survive container restarts/recreation.
 #
-# Storage: in-memory H2 (the image default). No volume is mounted, so all
-# data is lost when the container is removed/recreated. Persistent storage
-# (Postgres) is planned for the next increment.
+# - db: postgres:16, named volume `hapi-db-data`, pg_isready healthcheck.
+# - hapi-hub: pinned to hapiproject/hapi:v8.10.0-1 (the same build that
+#   :latest resolved to when this was first stood up — see
+#   docs/runbooks/phase1-hapi-hub.md). Configured via Spring Boot datasource
+#   env vars (HAPI_FHIR_* prefix maps to spring.datasource.* / hibernate
+#   dialect) to use Postgres instead of the default H2.
+# - hapi-hub waits for db to be healthy before starting
+#   (depends_on: condition: service_healthy).
 #
-# Note: the hapiproject/hapi image is a distroless JRE image — there is no
-# shell, curl, or wget inside it, so a Docker-native HEALTHCHECK isn't
-# practical here. Readiness is verified externally by polling
-# /fhir/metadata (see docs/runbooks/phase1-hapi-hub.md).
+# Secrets: POSTGRES_PASSWORD comes from compose/.env (gitignored). See
+# compose/.env.example for the required variables.
 
 services:
+  db:
+    image: postgres:16
+    container_name: hapi-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hapi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: hapi
+    volumes:
+      - hapi-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hapi -d hapi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   hapi-hub:
-    image: hapiproject/hapi:latest
+    image: hapiproject/hapi:v8.10.0-1
     container_name: hapi-hub
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8080:8080"
+    environment:
+      hapi.fhir.default_encoding: json
+      spring.datasource.url: jdbc:postgresql://db:5432/hapi
+      spring.datasource.username: hapi
+      spring.datasource.password: ${POSTGRES_PASSWORD}
+      spring.datasource.driverClassName: org.postgresql.Driver
+      spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
+
+volumes:
+  hapi-db-data:
