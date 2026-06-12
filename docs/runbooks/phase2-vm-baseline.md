@@ -113,6 +113,43 @@ Repeat the `Get-ComputerInfo`/`Get-VM` queries from "Before". Record:
 These numbers go into `docs/adr/0004-gate-a-bahmni-edition-and-sizing.md`
 to confirm/revise the Bahmni Standard / Lite / vanilla OpenMRS choice.
 
+**Measured 2026-06-12** (elevated PowerShell, `rhl-central-hospital`
+running and idle, autoinstall complete):
+
+```
+Get-ComputerInfo | Select-Object OsTotalVisibleMemorySize, OsFreePhysicalMemory
+
+OsTotalVisibleMemorySize OsFreePhysicalMemory
+------------------------ --------------------
+                66820112             24313016
+
+Get-VM rhl-central-hospital | Select-Object Name, State, MemoryAssigned, MemoryDemand, ProcessorCount
+
+Name           : rhl-central-hospital
+State          : Running
+MemoryAssigned : 2147483648
+MemoryDemand   : 944766976
+ProcessorCount : 4
+```
+
+- Host #1: 63.7 GB total, 23.2 GB free with the VM running and idle (vs.
+  ~21.8 GB free pre-VM, non-elevated). The two measurements aren't a clean
+  before/after delta (different elevation levels, different points in
+  time), but both confirm Host #1 has 20+ GB headroom with the VM present.
+- VM: assigned 2 GB (its Dynamic Memory floor), demanding ~0.9 GB at idle,
+  4 vCPUs. Ceiling is configured at 16 GB — Hyper-V will grow the
+  allocation toward that only if Bahmni's working set demands it.
+- Inside the VM (`free -h`, `nproc`, `df -h /`):
+  ```
+                 total        used        free      shared  buff/cache   available
+  Mem:           1.8Gi       503Mi       1.1Gi       4.0Mi       503Mi       1.3Gi
+  Swap:          3.8Gi          0B       3.8Gi
+  nproc: 4
+  /dev/sda2  78G  6.9G used  67G avail (10%)
+  ```
+  (Guest sees ~1.8 GiB vs. the 2 GiB Hyper-V reports assigned — normal
+  Gen2 firmware/device memory reservation.)
+
 ## Manual fallback path
 
 If you prefer not to use the script (or it fails partway):
