@@ -12,7 +12,7 @@
   cloud-init/user-data.template.yaml).
 
   Hyper-V management requires an elevated (Administrator) PowerShell
-  session — run this script accordingly. No Terraform/Ansible (Hard Rule
+  session - run this script accordingly. No Terraform/Ansible (Hard Rule
   #6 in docs/phase2-kickoff-prompt.md): this is the PowerShell-script-plus-
   runbook path for Phase 2 VM provisioning.
 
@@ -52,12 +52,12 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Hyper-V cmdlets fail with permission errors (not a clean "access denied"
-# exception) when not elevated — check explicitly and fail fast.
+# exception) when not elevated - check explicitly and fail fast.
 $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
 $isElevated = (New-Object Security.Principal.WindowsPrincipal($currentUser)).
     IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isElevated) {
-    throw "Run this script from an elevated (Administrator) PowerShell session — Hyper-V management requires it."
+    throw "Run this script from an elevated (Administrator) PowerShell session - Hyper-V management requires it."
 }
 
 foreach ($isoPath in @($UbuntuIsoPath, $SeedIsoPath)) {
@@ -92,7 +92,7 @@ Set-VMMemory -VM $vm -DynamicMemoryEnabled $true `
 
 Set-VMProcessor -VM $vm -Count $ProcessorCount
 
-# Ubuntu 24.04's shim is signed for the Microsoft UEFI CA — keep Secure Boot
+# Ubuntu 24.04's shim is signed for the Microsoft UEFI CA - keep Secure Boot
 # on rather than disabling it.
 Set-VMFirmware -VM $vm -SecureBootTemplate "MicrosoftUEFICertificateAuthority"
 
