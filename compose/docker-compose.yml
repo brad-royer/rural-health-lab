@@ -27,6 +27,19 @@
 #   mapped to distinct host ports 8081 (spoke-a) and 8082 (spoke-b) so all
 #   three servers are reachable from the host without colliding.
 # - hub and db are unchanged from Phase 1.2.
+#
+# Phase 2.4 — the CIN's single Mirth Connect instance (issue #13)
+#
+# - mirth: nextgenhealthcare/connect pinned to 4.5.2 — the last open-source
+#   Mirth release (4.6+ went commercial in 2024; Docker Hub tags stop at
+#   4.5.2). See docs/adr/0005-gate-c-integration-source-and-direction.md.
+# - One instance total (Hard Rule #3, "One Mirth"); Phase 3's federation
+#   pattern adds the second instance, not this file.
+# - Embedded Derby DB on a named volume. Production delta: real deployments
+#   back Mirth with Postgres — documented in the 2.4 runbook.
+# - Only the HTTPS admin/API port (8443) is mapped to the host; the hub owns
+#   host 8080. Channels reach the hub at http://hapi-hub:8080 over the
+#   compose network and Bahmni at https://192.168.1.230 over the LAN.
 
 services:
   db:
@@ -81,5 +94,17 @@ services:
     environment:
       hapi.fhir.default_encoding: json
 
+  mirth:
+    image: nextgenhealthcare/connect:4.5.2
+    container_name: mirth
+    restart: unless-stopped
+    ports:
+      - "8443:8443"
+    environment:
+      VMOPTIONS: -Xmx512m
+    volumes:
+      - mirth-appdata:/opt/connect/appdata
+
 volumes:
   hapi-db-data:
+  mirth-appdata:
