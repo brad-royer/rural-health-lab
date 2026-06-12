@@ -58,3 +58,23 @@ open for re-recommendation.
 - Known Lessons #5, #6 — `docs/adr/0001-handoff.md`
 - `/docs/phase3-parking-lot.md`
 - `docs/phase2-kickoff-prompt.md` — Gate B
+
+## Update — 2026-06-12: where the identifier system URI lives (2.3 finding)
+
+Implementing increment 2.3 surfaced an implementation detail this ADR's
+wording glossed over: OpenMRS does not store FHIR `identifier.system`
+URIs at all. Bahmni identifies identifiers by local *type* — the seed
+MRNs (`BAH-0001`..`BAH-0015`) live under Bahmni's required "Patient
+Identifier" type, and Bahmni's FHIR R4 output carries only that type and
+the value, with no `system` element (verified against
+`bahmni/openmrs:1.1.3`).
+
+The decision stands unchanged — identifiers are fully disjoint and
+Bahmni-issued — but the system URI
+`https://lab.example/identifiers/bahmni-central` is **attached by the
+Mirth transform in increment 2.4** (mapping identifier type → system
+URI), not stored in Bahmni. Consequence for 2.4: the transform owns the
+type→URI mapping, and 2.5's verification asserts the URI on the
+HAPI side, not the Bahmni side. The registry-of-identifier-systems
+question this raises is parked (entry #2 in
+`/docs/phase3-parking-lot.md`).
