@@ -1,0 +1,382 @@
+<channel version="4.5.2">
+  <id>84b28835-c32b-4dd3-a62f-a829e1c9e1cd</id>
+  <nextMetaDataId>2</nextMetaDataId>
+  <name>Bahmni Encounter to HIE</name>
+  <description>Increment 2.4 (issue #13), per Gate C (ADR 0005) and ADR 0003.
+Polls Bahmni's OpenMRS FHIR2 R4 Encounter endpoint and conditionally upserts
+each encounter into the HAPI hub keyed on Encounter.identifier under
+https://lab.example/identifiers/bahmni-central/encounter (value = the Bahmni
+encounter/visit UUID, i.e. source-system provenance). The subject is resolved
+by identifier search against HAPI (never a hardcoded id): Bahmni subject UUID
+-> Bahmni MRN -> HAPI Patient?identifier lookup. Fully validated in 2.5.</description>
+  <revision>1</revision>
+  <sourceConnector version="4.5.2">
+    <metaDataId>0</metaDataId>
+    <name>sourceConnector</name>
+    <properties class="com.mirth.connect.connectors.js.JavaScriptReceiverProperties" version="4.5.2">
+      <pluginProperties/>
+      <pollConnectorProperties version="4.5.2">
+        <pollingType>INTERVAL</pollingType>
+        <pollOnStart>true</pollOnStart>
+        <pollingFrequency>60000</pollingFrequency>
+        <pollingHour>0</pollingHour>
+        <pollingMinute>0</pollingMinute>
+        <cronJobs/>
+        <pollConnectorPropertiesAdvanced>
+          <weekly>true</weekly>
+          <inactiveDays>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+          </inactiveDays>
+          <dayOfMonth>1</dayOfMonth>
+          <allDay>true</allDay>
+          <startingHour>8</startingHour>
+          <startingMinute>0</startingMinute>
+          <endingHour>17</endingHour>
+          <endingMinute>0</endingMinute>
+        </pollConnectorPropertiesAdvanced>
+      </pollConnectorProperties>
+      <sourceConnectorProperties version="4.5.2">
+        <responseVariable>None</responseVariable>
+        <respondAfterProcessing>true</respondAfterProcessing>
+        <processBatch>false</processBatch>
+        <firstResponse>false</firstResponse>
+        <processingThreads>1</processingThreads>
+        <resourceIds class="linked-hash-map">
+          <entry>
+            <string>Default Resource</string>
+            <string>[Default Resource]</string>
+          </entry>
+        </resourceIds>
+        <queueBufferSize>1000</queueBufferSize>
+      </sourceConnectorProperties>
+      <script><![CDATA[
+// Poll Bahmni's OpenMRS FHIR2 R4 Encounter endpoint; emit one raw FHIR
+// Encounter JSON string per resource. Same polling/idempotency model as the
+// Patient channel (full resync on redeploy; conditional upsert downstream).
+// Apache HttpClient instead of java.net.URL: on Java 17 the JDK's internal
+// HttpURLConnection impl classes aren't exported to Rhino's unnamed module.
+var BASE = 'https://192.168.1.230/openmrs/ws/fhir2/R4';
+var AUTH = 'Basic ' + java.util.Base64.getEncoder().encodeToString(
+    new java.lang.String('superman:Admin123').getBytes('UTF-8'));
+
+function newClient() {
+    var sslCtx = org.apache.http.ssl.SSLContexts.custom()
+        .loadTrustMaterial(null, new org.apache.http.conn.ssl.TrustStrategy({
+            isTrusted: function(chain, authType) { return true; }
+        })).build();
+    var config = org.apache.http.client.config.RequestConfig.custom()
+        .setConnectTimeout(10000).setSocketTimeout(30000).build();
+    return org.apache.http.impl.client.HttpClients.custom()
+        .setSSLContext(sslCtx)
+        .setSSLHostnameVerifier(org.apache.http.conn.ssl.NoopHostnameVerifier.INSTANCE)
+        .setDefaultRequestConfig(config)
+        .build();
+}
+
+function httpGet(client, url) {
+    var get = new org.apache.http.client.methods.HttpGet(url);
+    get.setHeader('Authorization', AUTH);
+    get.setHeader('Accept', 'application/fhir+json');
+    var resp = client.execute(get);
+    try {
+        var status = resp.getStatusLine().getStatusCode();
+        var body = String(org.apache.http.util.EntityUtils.toString(resp.getEntity(), 'UTF-8'));
+        if (status != 200) {
+            throw 'GET ' + url + ' -> HTTP ' + status + ' ' + body.substring(0, 300);
+        }
+        return body;
+    } finally {
+        resp.close();
+    }
+}
+
+var fmt = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+fmt.setTimeZone(java.util.TimeZone.getTimeZone('UTC'));
+var pollStart = fmt.format(new java.util.Date());
+
+var since = globalChannelMap.get('encounterLastPoll');
+var url = BASE + '/Encounter?_count=100' + (since ? '&_lastUpdated=ge' + since : '');
+
+var messages = new java.util.ArrayList();
+var client = newClient();
+try {
+    var pages = 0;
+    while (url && pages < 20) {
+        var bundle = JSON.parse(httpGet(client, url));
+        var entries = bundle.entry || [];
+        for (var i = 0; i < entries.length; i++) {
+            messages.add(JSON.stringify(entries[i].resource));
+        }
+        url = null;
+        var links = bundle.link || [];
+        for (var j = 0; j < links.length; j++) {
+            if (links[j].relation == 'next') { url = links[j].url; }
+        }
+        pages++;
+    }
+} finally {
+    client.close();
+}
+
+globalChannelMap.put('encounterLastPoll', pollStart);
+return messages;
+]]></script>
+    </properties>
+    <transformer version="4.5.2">
+      <elements/>
+      <inboundDataType>RAW</inboundDataType>
+      <outboundDataType>RAW</outboundDataType>
+      <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+          <splitType>JavaScript</splitType>
+          <batchScript/>
+        </batchProperties>
+      </inboundProperties>
+      <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+          <splitType>JavaScript</splitType>
+          <batchScript/>
+        </batchProperties>
+      </outboundProperties>
+    </transformer>
+    <filter version="4.5.2">
+      <elements/>
+    </filter>
+    <transportName>JavaScript Reader</transportName>
+    <mode>SOURCE</mode>
+    <enabled>true</enabled>
+    <waitForPrevious>true</waitForPrevious>
+  </sourceConnector>
+  <destinationConnectors>
+    <connector version="4.5.2">
+      <metaDataId>1</metaDataId>
+      <name>HAPI conditional upsert</name>
+      <properties class="com.mirth.connect.connectors.js.JavaScriptDispatcherProperties" version="4.5.2">
+        <pluginProperties/>
+        <destinationConnectorProperties version="4.5.2">
+          <queueEnabled>false</queueEnabled>
+          <sendFirst>false</sendFirst>
+          <retryIntervalMillis>10000</retryIntervalMillis>
+          <regenerateTemplate>false</regenerateTemplate>
+          <retryCount>3</retryCount>
+          <rotate>false</rotate>
+          <includeFilterTransformer>false</includeFilterTransformer>
+          <threadCount>1</threadCount>
+          <threadAssignmentVariable/>
+          <validateResponse>false</validateResponse>
+          <resourceIds class="linked-hash-map">
+            <entry>
+              <string>Default Resource</string>
+              <string>[Default Resource]</string>
+            </entry>
+          </resourceIds>
+          <queueBufferSize>1000</queueBufferSize>
+          <reattachAttachments>true</reattachAttachments>
+        </destinationConnectorProperties>
+        <script><![CDATA[
+// Resolve the subject by identifier (never hardcoded ids), then conditionally
+// upsert the Encounter into HAPI keyed on the Bahmni encounter UUID under the
+// encounter provenance identifier system. Retries (3x10s) cover the race
+// where an encounter polls in before its patient has synced.
+var BAHMNI = 'https://192.168.1.230/openmrs/ws/fhir2/R4';
+var AUTH = 'Basic ' + java.util.Base64.getEncoder().encodeToString(
+    new java.lang.String('superman:Admin123').getBytes('UTF-8'));
+var HAPI = 'http://hapi-hub:8080/fhir';
+var PATIENT_SYSTEM = 'https://lab.example/identifiers/bahmni-central';
+var ENCOUNTER_SYSTEM = 'https://lab.example/identifiers/bahmni-central/encounter';
+
+function newClient(trustAll) {
+    var builder = org.apache.http.impl.client.HttpClients.custom()
+        .setDefaultRequestConfig(org.apache.http.client.config.RequestConfig.custom()
+            .setConnectTimeout(10000).setSocketTimeout(30000).build());
+    if (trustAll) {
+        builder.setSSLContext(org.apache.http.ssl.SSLContexts.custom()
+            .loadTrustMaterial(null, new org.apache.http.conn.ssl.TrustStrategy({
+                isTrusted: function(chain, authType) { return true; }
+            })).build());
+        builder.setSSLHostnameVerifier(org.apache.http.conn.ssl.NoopHostnameVerifier.INSTANCE);
+    }
+    return builder.build();
+}
+
+function execute(client, req, okStatuses) {
+    var resp = client.execute(req);
+    try {
+        var status = resp.getStatusLine().getStatusCode();
+        var body = String(org.apache.http.util.EntityUtils.toString(resp.getEntity(), 'UTF-8'));
+        if (okStatuses.indexOf(status) < 0) {
+            throw req.getMethod() + ' ' + req.getURI() + ' -> HTTP ' + status + ' ' + body.substring(0, 500);
+        }
+        return body;
+    } finally {
+        resp.close();
+    }
+}
+
+function bahmniGet(client, path) {
+    var get = new org.apache.http.client.methods.HttpGet(BAHMNI + path);
+    get.setHeader('Authorization', AUTH);
+    get.setHeader('Accept', 'application/fhir+json');
+    return execute(client, get, [200]);
+}
+
+var src = JSON.parse(connectorMessage.getRawData());
+var encId = src.id;
+
+var subjRef = src.subject && src.subject.reference;
+if (!subjRef || subjRef.indexOf('Patient/') != 0) {
+    throw 'Encounter ' + encId + ' has no Patient subject reference';
+}
+
+// Step 1: Bahmni subject UUID -> Bahmni MRN ("Patient Identifier" type).
+var bahmniClient = newClient(true);
+var mrn = null;
+try {
+    var subj = JSON.parse(bahmniGet(bahmniClient, '/' + subjRef));
+    var ids = subj.identifier || [];
+    for (var i = 0; i < ids.length; i++) {
+        var t = ids[i].type;
+        if (t && t.text == 'Patient Identifier' && ids[i].use != 'old') {
+            mrn = ids[i].value;
+        }
+    }
+} finally {
+    bahmniClient.close();
+}
+if (!mrn) {
+    throw 'Bahmni subject ' + subjRef + ' has no "Patient Identifier" - cannot resolve in HIE';
+}
+
+function stripElementIds(arr) {
+    var out = [];
+    for (var i = 0; i < (arr || []).length; i++) {
+        var copy = JSON.parse(JSON.stringify(arr[i]));
+        delete copy.id;
+        out.push(copy);
+    }
+    return out;
+}
+
+var hapiClient = newClient(false);
+try {
+    // Step 2: MRN -> HAPI Patient id, by identifier search (the resolution
+    // ADR 0003 / the kickoff doc require; never a hardcoded id).
+    var lookup = new org.apache.http.client.methods.HttpGet(HAPI + '/Patient?identifier='
+        + encodeURIComponent(PATIENT_SYSTEM + '|' + mrn));
+    lookup.setHeader('Accept', 'application/fhir+json');
+    var found = JSON.parse(execute(hapiClient, lookup, [200]));
+    if (!found.total || found.total < 1) {
+        throw 'Subject ' + mrn + ' not in HIE yet (patient channel must sync first) - will retry';
+    }
+    var hapiPatientId = found.entry[0].resource.id;
+
+    // Minimal clinical envelope: identifier, status, class, type, period,
+    // subject. Bahmni-local references (location, participant, partOf visit)
+    // are dropped - those targets don't exist in the HIE.
+    var target = {
+        resourceType: 'Encounter',
+        identifier: [{ system: ENCOUNTER_SYSTEM, value: encId }],
+        status: src.status,
+        'class': src['class'],
+        type: stripElementIds(src.type),
+        period: src.period,
+        subject: { reference: 'Patient/' + hapiPatientId }
+    };
+
+    // Step 3: conditional upsert keyed on the encounter provenance identifier.
+    var put = new org.apache.http.client.methods.HttpPut(HAPI + '/Encounter?identifier='
+        + encodeURIComponent(ENCOUNTER_SYSTEM + '|' + encId));
+    put.setHeader('Content-Type', 'application/fhir+json');
+    put.setEntity(new org.apache.http.entity.StringEntity(JSON.stringify(target), 'UTF-8'));
+    execute(hapiClient, put, [200, 201]);
+    return 'upserted encounter ' + encId + ' (subject ' + mrn + ')';
+} finally {
+    hapiClient.close();
+}
+]]></script>
+      </properties>
+      <transformer version="4.5.2">
+        <elements/>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript/>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript/>
+          </batchProperties>
+        </outboundProperties>
+      </transformer>
+      <responseTransformer version="4.5.2">
+        <elements/>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript/>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript/>
+          </batchProperties>
+        </outboundProperties>
+      </responseTransformer>
+      <filter version="4.5.2">
+        <elements/>
+      </filter>
+      <transportName>JavaScript Writer</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>true</waitForPrevious>
+    </connector>
+  </destinationConnectors>
+  <preprocessingScript>// Modify the message variable below to pre process data
+return message;</preprocessingScript>
+  <postprocessingScript>// This script executes once after a message has been processed
+// Responses returned from here will be stored as "Postprocessor" in the response map
+return;</postprocessingScript>
+  <deployScript>// This script executes once when the channel is deployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</deployScript>
+  <undeployScript>// This script executes once when the channel is undeployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</undeployScript>
+  <properties version="4.5.2">
+    <clearGlobalChannelMap>true</clearGlobalChannelMap>
+    <messageStorageMode>PRODUCTION</messageStorageMode>
+    <encryptData>false</encryptData>
+    <encryptAttachments>false</encryptAttachments>
+    <encryptCustomMetaData>false</encryptCustomMetaData>
+    <removeContentOnCompletion>false</removeContentOnCompletion>
+    <removeOnlyFilteredOnCompletion>false</removeOnlyFilteredOnCompletion>
+    <removeAttachmentsOnCompletion>false</removeAttachmentsOnCompletion>
+    <initialState>STARTED</initialState>
+    <storeAttachments>false</storeAttachments>
+    <metaDataColumns/>
+    <attachmentProperties version="4.5.2">
+      <type>None</type>
+      <properties/>
+    </attachmentProperties>
+    <resourceIds class="linked-hash-map">
+      <entry>
+        <string>Default Resource</string>
+        <string>[Default Resource]</string>
+      </entry>
+    </resourceIds>
+  </properties>
+</channel>
