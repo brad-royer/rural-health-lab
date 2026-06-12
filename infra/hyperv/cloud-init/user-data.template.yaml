@@ -1,0 +1,28 @@
+#cloud-config
+# Ubuntu Server 24.04 LTS autoinstall config — Phase 2.1 central-hospital VM
+# (docs/phase2-kickoff-prompt.md). build-seed-iso.sh fills in the SSH key
+# and password placeholders below and writes the result to
+# .generated/user-data (gitignored — contains a real key/hash).
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  identity:
+    hostname: rhl-central-hospital
+    username: ubuntu
+    password: "__PASSWORD_HASH__"
+  ssh:
+    install-server: true
+    allow-pw: false
+    authorized-keys:
+      - "__SSH_AUTHORIZED_KEY__"
+  storage:
+    layout:
+      name: direct
+  packages:
+    - docker.io
+    - docker-compose-v2
+  late-commands:
+    - curtin in-target --target=/target -- usermod -aG docker ubuntu
+    - curtin in-target --target=/target -- systemctl enable docker
