@@ -26,6 +26,12 @@ synthea/.cache/
 **/data/
 **/volumes/
 
+# Hyper-V provisioning: generated SSH keypairs, rendered cloud-init
+# user-data, and seed ISOs (regenerable via
+# infra/hyperv/cloud-init/build-seed-iso.sh) plus downloaded install media
+infra/hyperv/cloud-init/.generated/
+infra/hyperv/**/*.iso
+
 # OS / editor
 .DS_Store
 *.swp
