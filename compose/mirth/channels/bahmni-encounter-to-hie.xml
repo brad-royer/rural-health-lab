@@ -183,8 +183,7 @@ return messages;
         <script><![CDATA[
 // Resolve the subject by identifier (never hardcoded ids), then conditionally
 // upsert the Encounter into HAPI keyed on the Bahmni encounter UUID under the
-// encounter provenance identifier system. Retries (3x10s) cover the race
-// where an encounter polls in before its patient has synced.
+// encounter provenance identifier system.
 var BAHMNI = 'https://192.168.1.230/openmrs/ws/fhir2/R4';
 var AUTH = 'Basic ' + java.util.Base64.getEncoder().encodeToString(
     new java.lang.String('superman:Admin123').getBytes('UTF-8'));
@@ -268,14 +267,26 @@ var hapiClient = newClient(false);
 try {
     // Step 2: MRN -> HAPI Patient id, by identifier search (the resolution
     // ADR 0003 / the kickoff doc require; never a hardcoded id).
-    var lookup = new org.apache.http.client.methods.HttpGet(HAPI + '/Patient?identifier='
-        + encodeURIComponent(PATIENT_SYSTEM + '|' + mrn));
-    lookup.setHeader('Accept', 'application/fhir+json');
-    var found = JSON.parse(execute(hapiClient, lookup, [200]));
-    if (!found.total || found.total < 1) {
-        throw 'Subject ' + mrn + ' not in HIE yet (patient channel must sync first) - will retry';
+    //
+    // The subject may not have synced yet: the patient channel polls on its
+    // own 60s cycle, and a thrown error here is TERMINAL for the message
+    // (Mirth's destination retry does not re-run JavaScript Writer
+    // exceptions - found the hard way in 2.5 verification). Wait up to 90s,
+    // covering a full patient-channel cycle plus margin, before failing.
+    var hapiPatientId = null;
+    for (var attempt = 0; attempt < 10 && !hapiPatientId; attempt++) {
+        if (attempt > 0) { java.lang.Thread.sleep(10000); }
+        var lookup = new org.apache.http.client.methods.HttpGet(HAPI + '/Patient?identifier='
+            + encodeURIComponent(PATIENT_SYSTEM + '|' + mrn));
+        lookup.setHeader('Accept', 'application/fhir+json');
+        var found = JSON.parse(execute(hapiClient, lookup, [200]));
+        if (found.total && found.total >= 1) {
+            hapiPatientId = found.entry[0].resource.id;
+        }
     }
-    var hapiPatientId = found.entry[0].resource.id;
+    if (!hapiPatientId) {
+        throw 'Subject ' + mrn + ' not in HIE after 90s (patient channel down or lagging?)';
+    }
 
     // Minimal clinical envelope: identifier, status, class, type, period,
     // subject. Bahmni-local references (location, participant, partOf visit)
