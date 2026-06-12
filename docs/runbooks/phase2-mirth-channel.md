@@ -133,7 +133,7 @@ MPI/dedup lesson, not a bug; 2.5's verification must call it out.
    plus margin) before failing the message. If a message does end up
    ERROR'd, a redeploy (`scripts/deploy-mirth-channels.sh`) forces a full
    resync that re-delivers it.
-5. **Credentials are hardcoded lab defaults** in the committed channel XML
+6. **Credentials are hardcoded lab defaults** in the committed channel XML
    (`superman`/`Admin123` toward Bahmni; HAPI is unauthenticated). Fine
    for this synthetic lab; production delta below.
 
