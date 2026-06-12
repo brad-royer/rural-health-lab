@@ -55,12 +55,25 @@ inventory (2026-06-12, non-elevated query): Host #1 = 63.7 GB total RAM,
    `infra/hyperv/cloud-init/.generated/` (gitignored), and writes
    `seed.iso`. Re-running reuses the existing keypair.
 
-2. **Provision the VM** (elevated PowerShell on Host #1):
+2. **Copy the seed ISO to a local path** (elevated PowerShell on Host #1).
+   `Add-VMDvdDrive` is serviced by the Hyper-V VM management service
+   running as SYSTEM, which cannot authenticate to a per-user
+   `\\wsl.localhost\...` mount ("network name cannot be found") - the seed
+   ISO must be on local disk:
 
    ```powershell
-   .\infra\hyperv\New-CentralHospitalVM.ps1 `
+   Copy-Item \\wsl.localhost\<distro>\home\bradr\projects\rural-health-lab\infra\hyperv\cloud-init\.generated\seed.iso D:\ISOs\seed.iso
+   ```
+
+3. **Provision the VM** (same elevated session). The default execution
+   policy blocks unsigned scripts run from a UNC path; allow it for this
+   session only (does not change the system/user policy):
+
+   ```powershell
+   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+   & "\\wsl.localhost\<distro>\home\bradr\projects\rural-health-lab\infra\hyperv\New-CentralHospitalVM.ps1" `
      -UbuntuIsoPath D:\ISOs\ubuntu-24.04.1-live-server-amd64.iso `
-     -SeedIsoPath \\wsl.localhost\<distro>\home\bradr\projects\rural-health-lab\infra\hyperv\cloud-init\.generated\seed.iso
+     -SeedIsoPath D:\ISOs\seed.iso
    ```
 
    Defaults: `rhl-central-hospital`, Generation 2, 4 vCPU, Dynamic Memory
@@ -73,7 +86,7 @@ inventory (2026-06-12, non-elevated query): Host #1 = 63.7 GB total RAM,
    `cloud-init/user-data.template.yaml`) takes roughly 10-20 minutes; it
    reboots itself when done.
 
-3. **Find the VM's IP and verify**:
+4. **Find the VM's IP and verify**:
 
    ```powershell
    (Get-VM rhl-central-hospital | Get-VMNetworkAdapter).IPAddresses

@@ -18,16 +18,22 @@
 
 .PARAMETER UbuntuIsoPath
   Path to the Ubuntu Server 24.04 LTS "live-server" install ISO. Download
-  and verify per docs/runbooks/phase2-vm-baseline.md.
+  and verify per docs/runbooks/phase2-vm-baseline.md. Must be a path local
+  to this Windows host (see note on SeedIsoPath below).
 
 .PARAMETER SeedIsoPath
   Path to the cloud-init seed ISO produced by
-  infra/hyperv/cloud-init/build-seed-iso.sh.
+  infra/hyperv/cloud-init/build-seed-iso.sh. Must be a LOCAL path (e.g.
+  D:\ISOs\seed.iso) - Add-VMDvdDrive is serviced by the Hyper-V VM
+  management service running as SYSTEM, which cannot authenticate to a
+  per-user \\wsl.localhost\... mount ("network name cannot be found").
+  Copy the generated seed.iso from WSL2 to a local path first:
+    Copy-Item \\wsl.localhost\<distro>\...\.generated\seed.iso D:\ISOs\seed.iso
 
 .EXAMPLE
   .\New-CentralHospitalVM.ps1 `
     -UbuntuIsoPath D:\ISOs\ubuntu-24.04.1-live-server-amd64.iso `
-    -SeedIsoPath \\wsl.localhost\Ubuntu\home\bradr\projects\rural-health-lab\infra\hyperv\cloud-init\.generated\seed.iso
+    -SeedIsoPath D:\ISOs\seed.iso
 #>
 
 [CmdletBinding()]
