@@ -26,7 +26,7 @@ Secondary goals: learn Claude features (Projects, Claude Code, subagents, MCP, s
 | Spoke providers | HAPI FHIR (2–3 lightweight instances) | Simulated partner EMRs |
 | Synthetic patients | Synthea (MITRE) | Rural TX population, chronic disease config (diabetes, hypertension) |
 | Integration engine | Mirth Connect | Hub↔spoke routing; closest to real HIE architecture |
-| Patient portal | Medplum | Fastest working portal UI; FHIR-native |
+| Patient portal | Medplum | Fastest working portal UI; FHIR-native — **superseded by [ADR 0002](0002-defer-medplum-from-phase-1.md): deferred out of Phase 1** |
 | Identity/auth | Keycloak | OAuth2/OIDC simulating IAL2/AAL2 layer |
 | Orchestration | Docker Compose | Local topology |
 
