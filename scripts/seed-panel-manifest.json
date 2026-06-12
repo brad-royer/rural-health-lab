@@ -1,0 +1,303 @@
+{
+  "description": "Bahmni central-hospital seed panel (increment 2.3, ADR 0003). Demographics reused from the Synthea rural-TX population; MRNs are Bahmni-issued and disjoint from all Synthea/HAPI identifiers. source_file is repo-side traceability only and is never sent to Bahmni.",
+  "identifier_note": "MRNs are registered under Bahmni's required 'Patient Identifier' type. The system URI https://lab.example/identifiers/bahmni-central is attached by the Mirth transform in increment 2.4, not stored in OpenMRS.",
+  "selection": "sorted(synthea/output/fhir/*.json), living patients only, first 15.",
+  "patients": [
+    {
+      "mrn": "BAH-0001",
+      "source_file": "Abdul218_Schoen8_352cccfc-0946-b8f0-a793-a1897e7f48b6.json",
+      "family": "Schoen8",
+      "given": [
+        "Abdul218",
+        "Leif534"
+      ],
+      "gender": "male",
+      "birthDate": "2000-05-16",
+      "address": {
+        "line": [
+          "386 Fay Junction"
+        ],
+        "city": "Lumberton",
+        "state": "TX",
+        "postalCode": "77625",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0002",
+      "source_file": "Akilah516_Vina438_Runolfsdottir785_b7a270c9-7e9f-60b1-e305-a7bbb72dbdb2.json",
+      "family": "Runolfsdottir785",
+      "given": [
+        "Akilah516",
+        "Vina438"
+      ],
+      "gender": "female",
+      "birthDate": "1996-11-04",
+      "address": {
+        "line": [
+          "734 Schamberger Trace"
+        ],
+        "city": "Laredo",
+        "state": "TX",
+        "postalCode": "78043",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0003",
+      "source_file": "Alfonso758_Mondrag\u00f3n635_9bf7e9b4-a968-1398-067b-f56aca12d7c4.json",
+      "family": "Mondrag\u00f3n635",
+      "given": [
+        "Alfonso758",
+        "David908"
+      ],
+      "gender": "male",
+      "birthDate": "1973-01-02",
+      "address": {
+        "line": [
+          "370 Lang Flat Unit 10"
+        ],
+        "city": "Lancaster",
+        "state": "TX",
+        "postalCode": "75241",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0004",
+      "source_file": "Amada498_Joellen497_Kub800_cdb9f2fd-bd2c-68a3-21dc-28653c4b62d5.json",
+      "family": "Kub800",
+      "given": [
+        "Amada498",
+        "Joellen497"
+      ],
+      "gender": "female",
+      "birthDate": "1995-05-17",
+      "address": {
+        "line": [
+          "756 Gaylord Hollow"
+        ],
+        "city": "Frisco",
+        "state": "TX",
+        "postalCode": "75035",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0005",
+      "source_file": "Anita473_Catalina187_D\u00edaz674_2d950093-7ccd-c8c0-c61e-bb6865439601.json",
+      "family": "D\u00edaz674",
+      "given": [
+        "Anita473",
+        "Catalina187"
+      ],
+      "gender": "female",
+      "birthDate": "1998-01-30",
+      "address": {
+        "line": [
+          "713 Heller Hollow"
+        ],
+        "city": "Austin",
+        "state": "TX",
+        "postalCode": "78750",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0006",
+      "source_file": "Arianna984_America446_Marquardt819_dadfdba2-33c6-695b-975a-e7a70c31a734.json",
+      "family": "Marquardt819",
+      "given": [
+        "Arianna984",
+        "America446"
+      ],
+      "gender": "female",
+      "birthDate": "1947-03-08",
+      "address": {
+        "line": [
+          "740 Bashirian Vale Unit 23"
+        ],
+        "city": "Port Arthur",
+        "state": "TX",
+        "postalCode": "77630",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0007",
+      "source_file": "Arlie183_Hirthe744_12b1d54a-424d-4e86-5377-152cdad4397b.json",
+      "family": "Hirthe744",
+      "given": [
+        "Arlie183",
+        "Judson999"
+      ],
+      "gender": "male",
+      "birthDate": "1961-09-03",
+      "address": {
+        "line": [
+          "554 Harvey Wall Suite 48"
+        ],
+        "city": "West Odessa",
+        "state": "TX",
+        "postalCode": "00000",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0008",
+      "source_file": "Ayanna800_Altenwerth646_d2f06900-8267-3069-699c-e5c6eddf8f6a.json",
+      "family": "Altenwerth646",
+      "given": [
+        "Ayanna800",
+        "Hwa978"
+      ],
+      "gender": "female",
+      "birthDate": "2005-11-02",
+      "address": {
+        "line": [
+          "175 Koss Trace Suite 59"
+        ],
+        "city": "Huntsville",
+        "state": "TX",
+        "postalCode": "77340",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0009",
+      "source_file": "Benjamin360_Littel644_68fb0e6f-684d-f992-6252-ef78e4423081.json",
+      "family": "Littel644",
+      "given": [
+        "Benjamin360",
+        "Cyrus914"
+      ],
+      "gender": "male",
+      "birthDate": "1994-07-09",
+      "address": {
+        "line": [
+          "411 Lesch Mews"
+        ],
+        "city": "Fort Worth",
+        "state": "TX",
+        "postalCode": "76127",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0010",
+      "source_file": "Beth967_Crona259_023e1f61-a788-7688-0424-72feafea45f4.json",
+      "family": "Crona259",
+      "given": [
+        "Beth967"
+      ],
+      "gender": "female",
+      "birthDate": "1958-10-26",
+      "address": {
+        "line": [
+          "433 Deckow Avenue Unit 71"
+        ],
+        "city": "Garland",
+        "state": "TX",
+        "postalCode": "75238",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0011",
+      "source_file": "Bobbye345_Schinner682_2f48f6fc-0055-1a97-3d77-cc0c19f84fb7.json",
+      "family": "Schinner682",
+      "given": [
+        "Bobbye345"
+      ],
+      "gender": "female",
+      "birthDate": "1966-04-08",
+      "address": {
+        "line": [
+          "288 Sipes Frontage road Unit 21"
+        ],
+        "city": "Stephenville",
+        "state": "TX",
+        "postalCode": "76401",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0012",
+      "source_file": "Bradford382_Bergstrom287_856a52a8-a9f2-af1e-04eb-1e7744912b84.json",
+      "family": "Bergstrom287",
+      "given": [
+        "Bradford382",
+        "Santo387"
+      ],
+      "gender": "male",
+      "birthDate": "1972-04-14",
+      "address": {
+        "line": [
+          "958 Boyle Byway"
+        ],
+        "city": "San Antonio",
+        "state": "TX",
+        "postalCode": "78218",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0013",
+      "source_file": "Cedric746_Hintz995_f936a9ea-c654-3a02-077e-5d98a2f5f8a7.json",
+      "family": "Hintz995",
+      "given": [
+        "Cedric746"
+      ],
+      "gender": "male",
+      "birthDate": "1971-12-22",
+      "address": {
+        "line": [
+          "360 Schamberger Crossroad"
+        ],
+        "city": "San Antonio",
+        "state": "TX",
+        "postalCode": "78256",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0014",
+      "source_file": "Cherish740_Ortiz186_1fa8eadd-a781-3b5d-0c4a-29febc92ee21.json",
+      "family": "Ortiz186",
+      "given": [
+        "Cherish740"
+      ],
+      "gender": "female",
+      "birthDate": "2018-08-07",
+      "address": {
+        "line": [
+          "636 Doyle Gardens Suite 39"
+        ],
+        "city": "Bogata",
+        "state": "TX",
+        "postalCode": "75417",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "BAH-0015",
+      "source_file": "Ciara810_Towne435_9f94c561-30b1-17af-5fb5-348e9474d0bb.json",
+      "family": "Towne435",
+      "given": [
+        "Ciara810",
+        "Sean831"
+      ],
+      "gender": "female",
+      "birthDate": "2017-07-01",
+      "address": {
+        "line": [
+          "128 Russel Mission"
+        ],
+        "city": "El Paso",
+        "state": "TX",
+        "postalCode": "79904",
+        "country": "US"
+      }
+    }
+  ]
+}
