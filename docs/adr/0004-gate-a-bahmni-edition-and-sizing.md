@@ -88,3 +88,13 @@ reindex explicitly in the 2.2 runbook so it isn't mistaken for a hang.
 - `docs/phase2-kickoff-prompt.md` - Gate A
 - `docs/runbooks/phase2-vm-baseline.md` - measured Host #1/VM numbers
 - Increment 2.2 (#12) - Bahmni deployment and the re-evaluation checkpoint
+
+## Update - 2026-06-12: 2.2 checkpoint result
+
+The increment 2.2 re-evaluation checkpoint **passed**. Bahmni Standard's
+`emr` profile (Bahmni's lean OpenMRS-based core - no
+OpenELIS/Odoo/PACS/Reports/Metabase/CDSS) demanded ~5 GB RAM under light
+use (login + one patient registration), against a 16 GB ceiling. Host #1
+retained ~17.8 GB free, comfortably above the ~8-10 GB headroom threshold.
+No fallback to Bahmni Lite or vanilla OpenMRS is needed. Full numbers in
+`docs/runbooks/phase2-bahmni-deployment.md`.
