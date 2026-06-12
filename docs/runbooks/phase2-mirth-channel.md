@@ -122,8 +122,17 @@ MPI/dedup lesson, not a bug; 2.5's verification must call it out.
 4. **Encounter envelope is minimal** (identifier, status, class, type,
    period, subject). Bahmni-local references (location, participant,
    partOf visit) are dropped - their targets don't exist in the HIE.
-   The destination retries 3x10s to cover the encounter-before-patient
-   race on first sync.
+5. **Encounter-before-patient race - thrown JS errors are terminal.** The
+   two channels poll independently, so an encounter can arrive before its
+   patient has synced. Mirth's destination `retryCount` does NOT re-run
+   JavaScript Writer exceptions - a throw marks the message ERROR
+   permanently (found by 2.5's verification: the encounter channel
+   error-ed a visit whose patient synced 30s later, and it never
+   recovered until a redeploy resync). The destination script therefore
+   waits in-process for the subject (up to 90s, one patient-channel cycle
+   plus margin) before failing the message. If a message does end up
+   ERROR'd, a redeploy (`scripts/deploy-mirth-channels.sh`) forces a full
+   resync that re-delivers it.
 5. **Credentials are hardcoded lab defaults** in the committed channel XML
    (`superman`/`Admin123` toward Bahmni; HAPI is unauthenticated). Fine
    for this synthetic lab; production delta below.
