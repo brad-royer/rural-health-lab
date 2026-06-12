@@ -86,6 +86,13 @@ inventory (2026-06-12, non-elevated query): Host #1 = 63.7 GB total RAM,
    `cloud-init/user-data.template.yaml`) takes roughly 10-20 minutes; it
    reboots itself when done.
 
+   **Expected one-time prompt**: early in boot, subiquity may stop with
+   "autoinstall" needs to be added to your kernel command line and ask for
+   confirmation to continue. This is its safety check for an unattended
+   install when `autoinstall` isn't already on the kernel cmdline (which
+   `Add-VMDvdDrive` doesn't let us set). Connect via Hyper-V Manager and
+   type `yes` to proceed; the install then continues unattended.
+
 4. **Find the VM's IP and verify**:
 
    ```powershell
