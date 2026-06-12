@@ -396,9 +396,11 @@ it explicitly, the same as you would `terraform destroy`.
 
 ## Known limitation / what's next
 
-- **Hub + 2 spokes, no routing yet.** No integration engine (Mirth),
-  identity provider (Keycloak), or portal (Medplum) yet. Those are later
-  increments in Phase 1/2 per `docs/adr/0001-handoff.md`.
+- **Hub + 2 spokes, no routing yet.** No integration engine (Mirth) or
+  identity provider (Keycloak) yet. Those are later increments in Phase 2
+  per `docs/adr/0001-handoff.md`. A patient portal (Medplum or otherwise) is
+  deferred out of Phase 1 entirely — see
+  `docs/adr/0002-defer-medplum-from-phase-1.md`.
 - **Spokes are ephemeral.** `spoke-a`/`spoke-b` use in-memory H2 — any
   data created on them is lost on container recreation. This is
   intentional for now; revisit if a later increment needs spoke data to
