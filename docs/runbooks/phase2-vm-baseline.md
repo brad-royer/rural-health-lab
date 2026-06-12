@@ -99,10 +99,24 @@ inventory (2026-06-12, non-elevated query): Host #1 = 63.7 GB total RAM,
    (Get-VM rhl-central-hospital | Get-VMNetworkAdapter).IPAddresses
    ```
 
+   **Expect this to return nothing** on this image (measured 2026-06-12):
+   Hyper-V's Data Exchange (KVP) integration needs a guest-side
+   `hv-kvp-daemon`, which the minimal Ubuntu autoinstall doesn't include.
+   Instead, connect via the Hyper-V console (Hyper-V Manager -> Connect,
+   log in with the one-time console password from step 1) and run
+   `ip -4 addr show` to read the IP directly.
+
+   Then SSH **from WSL2 bash, not PowerShell**:
+
    ```bash
    ssh -i infra/hyperv/cloud-init/.generated/id_ed25519_central-hospital ubuntu@<ip>
    docker --version && docker compose version
    ```
+
+   Running `ssh` from Windows against the key over a
+   `\\wsl.localhost\...` UNC path fails with "UNPROTECTED PRIVATE KEY
+   FILE" - Windows OpenSSH can't trust permission bits reported across
+   that mount. From WSL2 the key's local `0600` perms are honored.
 
 ## After: record Host #1 usage
 
