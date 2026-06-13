@@ -71,12 +71,20 @@ inventory (2026-06-12, non-elevated query): Host #1 = 63.7 GB total RAM,
 
    ```powershell
    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-   & "\\wsl.localhost\<distro>\home\bradr\projects\rural-health-lab\infra\hyperv\New-CentralHospitalVM.ps1" `
+   & "\\wsl.localhost\<distro>\home\bradr\projects\rural-health-lab\infra\hyperv\New-LabVM.ps1" `
+     -VMName rhl-central-hospital -SwitchName "Internet Switch" `
      -UbuntuIsoPath D:\ISOs\ubuntu-24.04.1-live-server-amd64.iso `
-     -SeedIsoPath D:\ISOs\seed.iso
+     -SeedIsoPath D:\ISOs\seed.iso `
+     -MemoryStartupGB 4 -MemoryMinimumGB 2 -MemoryMaximumGB 16 -VhdSizeGB 80
    ```
 
-   Defaults: `rhl-central-hospital`, Generation 2, 4 vCPU, Dynamic Memory
+   > The script was generalized to `New-LabVM.ps1` in Phase 3a (`-VMName`
+   > and `-SwitchName` are now required; sizing defaults are smaller). The
+   > seed builder is now `build-seed-iso.sh <hostname>` and writes to
+   > `.generated/<hostname>/` — the central-hospital artifacts above predate
+   > that and live at `.generated/` root.
+
+   This builds: `rhl-central-hospital`, Generation 2, 4 vCPU, Dynamic Memory
    4 GB startup / 2 GB min / 16 GB max, 80 GB dynamic VHDX under
    `D:\HyperV\rhl-central-hospital\`, attached to the existing "Internet
    Switch" external vSwitch (LAN-routable, 192.168.1.x).

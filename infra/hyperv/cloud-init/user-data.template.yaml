@@ -1,15 +1,15 @@
 #cloud-config
-# Ubuntu Server 24.04 LTS autoinstall config — Phase 2.1 central-hospital VM
-# (docs/phase2-kickoff-prompt.md). build-seed-iso.sh fills in the SSH key
-# and password placeholders below and writes the result to
-# .generated/user-data (gitignored — contains a real key/hash).
+# Ubuntu Server 24.04 LTS autoinstall config — generic lab VM template.
+# build-seed-iso.sh fills in the hostname, SSH key, and password placeholders
+# below per VM and writes the result to .generated/<hostname>/user-data
+# (gitignored — contains a real key/hash).
 autoinstall:
   version: 1
   locale: en_US.UTF-8
   keyboard:
     layout: us
   identity:
-    hostname: rhl-central-hospital
+    hostname: __HOSTNAME__
     username: ubuntu
     password: "__PASSWORD_HASH__"
   ssh:
