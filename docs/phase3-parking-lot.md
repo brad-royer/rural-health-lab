@@ -63,3 +63,35 @@ enough context for Phase 3 to act on — and move on. Do not solve it now.
   patient-safety hazard; the HIE's identifier registry (entry #2) should
   state a policy (identifiers are never reused) rather than inherit
   whatever the source EHR happens to allow.
+
+### 4. Three-way record linkage: same human in Synthea, Bahmni, and OpenEMR
+
+- **Date / increment:** 2026-06-13 / 3a.4
+- **Question:** Five humans (Synthea originals; Bahmni `BAH-0001..0005`;
+  OpenEMR `CAH-0001..0005`) will exist in the HIE three times after 3a.5,
+  under three disjoint identifier systems, with demographics that don't
+  round-trip identically across the three source EHRs. What does Phase 3b's
+  MPI/MDM key on, and what is the golden-record/link policy across three
+  sources rather than two?
+- **Why it surfaced:** ADR 0008 deliberately overlapped the OpenEMR panel
+  with the Bahmni panel to create the hardest linkage case on purpose.
+- **Phase 3b relevance:** This is the headline input to the HAPI MDM work;
+  the two-way duplication from Phase 2 (parking-lot #1) becomes three-way.
+  Also stresses the identifier-system registry (#2) — now three participant
+  URIs.
+
+### 5. OpenEMR represents the CAH MRN as `pubpid` with a v2-0203 "PT" system
+
+- **Date / increment:** 2026-06-13 / 3a.4
+- **Question:** OpenEMR exposes the patient MRN (its `pubpid`) under FHIR
+  identifier system `http://terminology.hl7.org/CodeSystem/v2-0203` (type
+  PT), not under a participant-specific URI — the CAH-specific
+  `openemr-cah` system exists only once the CAH Mirth stamps it (3a.5). How
+  should the HIE registry (#2) reconcile that source EHRs expose identifiers
+  under generic/internal systems, and the participant URI is always an
+  integration-layer overlay?
+- **Why it surfaced:** Seeding OpenEMR; its FHIR Patient create ignores a
+  supplied identifier and assigns its own pubpid (see
+  `docs/runbooks/phase3a-seed-panel.md`).
+- **Phase 3b relevance:** Reinforces that the type→participant-URI mapping
+  is integration config the HIE owns, consistent across Bahmni and OpenEMR.
