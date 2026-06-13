@@ -41,3 +41,7 @@ infra/hyperv/**/*.iso
 
 # OpenEMR OAuth client key + id (Phase 3a)
 scripts/.secrets/
+
+# Python bytecode
+__pycache__/
+*.pyc
