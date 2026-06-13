@@ -56,12 +56,19 @@ the CAH Mirth demand more. ADR (`docs/adr/0007-...`) records this.
    `ssh -i infra/hyperv/cloud-init/.generated/rhl-acquired-cah/id_ed25519_rhl-acquired-cah ubuntu@<ip>`
    then `docker --version && docker compose version`.
 
-## Validation  _(filled in once the VM is reachable)_
+## Validation (2026-06-13)
 
-- [ ] VM `Running`, reachable via SSH from the control plane over the LAN.
-- [ ] Docker + Compose present.
-- [ ] Host #2 before/after RAM recorded (Phase 4 capacity input).
-- [ ] Confirm Host #2's pre-existing VMs untouched.
+- [x] VM `Running`, reachable via SSH from the control plane over the LAN
+      at **192.168.1.189** (MAC `00:15:5D:00:18:1D`, found via Host #2's
+      neighbor cache — no KVP in the guest).
+- [x] Docker 29.1.3 + Compose 2.40.3 present; Ubuntu 24.04.4 LTS, 4 vCPU,
+      58 GB disk (50 GB free).
+- [x] Host #2 RAM recorded: ~8 GB free before the VM; **6.6 GB free** with
+      the VM running idle (VM assigned 1.23 GB / demand 0.75 GB). Gate H
+      sizing (1/2/6 GB) holds; 3a.3 re-checks under OpenEMR load (ADR 0007).
+- [x] Host #2's 6 pre-existing VMs remain Off / untouched.
+
+SSH: `ssh -i infra/hyperv/cloud-init/.generated/rhl-acquired-cah/id_ed25519_rhl-acquired-cah ubuntu@192.168.1.189`
 
 ## Rollback
 
