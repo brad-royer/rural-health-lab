@@ -39,11 +39,10 @@ ssh -i "$KEY" "$VM" 'cd ~/openemr && docker compose pull && docker compose up -d
 - [x] `https://192.168.1.189/` returns 302 → login; `/meta/health/readyz`
       returns 200, from the VM **and** from the control plane over the LAN
       (the path 3a.6 verification needs).
-- [ ] Clinician login (`admin`/`pass`) succeeds and a test patient is
-      registered by hand through the UI at `https://192.168.1.189/`
-      (self-signed cert — proceed past the browser warning). Default
-      credentials are lab defaults — flagged to change before production-like
-      use.
+- [x] Clinician login (`admin`/`pass`) succeeds and a test patient was
+      registered by hand through the UI at `https://192.168.1.189/` —
+      2026-06-13. Default credentials are lab defaults — flagged to change
+      before production-like use.
 
 ## Resource usage (ADR 0007 checkpoint — PASS)
 
