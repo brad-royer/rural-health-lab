@@ -80,6 +80,15 @@ new wired link came up as `.115`). Resolution + the safe pattern:
   address from the start; the Wi-Fi-only starting point is a quirk of this
   particular box.
 
+**Gotcha — Wi-Fi keeps dropping; wired `.115` is the management path.**
+After the cable went in, PRAETORIAN's Wi-Fi (`.200`) repeatedly went down
+(power management / deprioritized behind wired). Once the external vSwitch
+existed on the wired NIC there was no further switch-blip risk, so the
+control-plane drivers (`Invoke-Host2.ps1`, `Copy-ToHost2.ps1`) now default to
+the wired **`192.168.1.115`**. Both `192.168.1.*` are in TrustedHosts, so
+either works when up. A DHCP reservation for the wired NIC would make this
+fully stable (deferred; `.115` has held across the session).
+
 ## Stage 2 — Static addressing + hosts entries  _(pending)_
 
 Reserve/assign the OpenEMR VM (3a.2) a static LAN IP; record name→IP entries

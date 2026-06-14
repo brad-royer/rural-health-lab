@@ -14,7 +14,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$Source,
     [Parameter(Mandatory = $true)][string]$Destination,
-    [string]$Host2 = '192.168.1.200',
+    [string]$Host2 = '192.168.1.115',
     [string]$CredPath
 )
 $ErrorActionPreference = 'Stop'

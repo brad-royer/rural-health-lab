@@ -57,8 +57,25 @@ Do not silently undersize (the Gate A discipline).
   workload), and `docs/runbooks/phase3a-vm-baseline.md` is updated.
 - Host #2's pre-existing VMs remain Off and untouched throughout.
 
+## Update - 2026-06-13: 3a.3 deployment checkpoint result
+
+**Checkpoint passed**, comfortably. With OpenEMR 8.1.0 + MariaDB 11.8.8 up
+and idle on the VM:
+- OpenEMR container 129 MiB, MariaDB 256 MiB (~384 MiB combined - OpenEMR's
+  LAMP stack is as light as expected).
+- VM guest using 806 MiB; Hyper-V `MemoryDemand` 2.32 GB / assigned 2.9 GB,
+  well under the 6 GB ceiling.
+- Host #2 free RAM settled at **21.2 GB** (the ~6.6 GB seen at 3a.2 was
+  transient - inflated by the in-flight BITS ISO download buffers, not real
+  pressure). Headroom is generous; no resize or host-workload trim needed.
+
+`latest` resolved to the **8.1.0** line; the compose pins `openemr/openemr:8.1.0`
+and `mariadb:11.8.8` explicitly (`compose/openemr/docker-compose.yml`).
+Re-check under heavier load only if a future increment drives real volume.
+
 ## Related
 - `docs/phase3a-kickoff-prompt.md` - Gate H
 - `docs/runbooks/phase3a-vm-baseline.md` - measured Host #2/VM numbers
+- `docs/runbooks/phase3a-openemr-deployment.md` - 3a.3 deployment
 - ADR 0004 (Gate A) - the Bahmni sizing analog this mirrors
 - Increment 3a.2 (#28) / 3a.3 (#29)

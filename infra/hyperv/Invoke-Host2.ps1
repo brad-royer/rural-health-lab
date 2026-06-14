@@ -30,7 +30,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$ScriptFile,
     [object[]]$ArgumentList = @(),
-    [string]$Host2 = '192.168.1.200',
+    [string]$Host2 = '192.168.1.115',
     [string]$CredPath
 )
 
