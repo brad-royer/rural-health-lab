@@ -1,0 +1,26 @@
+# CAH Mirth — the acquired CAH's own integration engine (Phase 3a.5).
+#
+# Runs on the rhl-acquired-cah VM (Host #2, 192.168.1.189), alongside OpenEMR.
+# This is the SECOND Mirth instance: federation A1, one Mirth per organization
+# (Known Lessons #9). It polls OpenEMR's FHIR API (same VM) over OAuth and
+# conditionally upserts patients/encounters into the HIE's HAPI across the
+# cross-host boundary (Host #1, exposed via Expose-HAPI-ToLAN.ps1). It does NOT
+# route through the central hospital's Mirth and does NOT straddle orgs.
+#
+# Pinned to the last open-source Mirth release (4.5.2), same as the HIE Mirth
+# (ADR 0005). Embedded Derby on a named volume; admin/API on 8443 (OpenEMR
+# owns 80/443 on this VM, so no conflict).
+services:
+  cah-mirth:
+    image: nextgenhealthcare/connect:4.5.2
+    container_name: cah-mirth
+    restart: unless-stopped
+    ports:
+      - "8443:8443"
+    environment:
+      VMOPTIONS: -Xmx512m
+    volumes:
+      - cah-mirth-appdata:/opt/connect/appdata
+
+volumes:
+  cah-mirth-appdata:
