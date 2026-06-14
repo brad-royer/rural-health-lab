@@ -89,27 +89,49 @@ the wired **`192.168.1.115`**. Both `192.168.1.*` are in TrustedHosts, so
 either works when up. A DHCP reservation for the wired NIC would make this
 fully stable (deferred; `.115` has held across the session).
 
-## Stage 2 — Static addressing + hosts entries  _(pending)_
+## Stage 2 — Addressing (done)
 
-Reserve/assign the OpenEMR VM (3a.2) a static LAN IP; record name→IP entries
-for the control plane and each Mirth. _Filled in with the actual addresses._
+Current LAN addresses (DHCP; reservations deferred — see the WSL-IP gotcha):
+- Host #1 (CENTURION): `192.168.1.176` (HIE host; HAPI exposed here).
+- Host #2 (PRAETORIAN): `192.168.1.115` (wired, management path).
+- OpenEMR VM (`rhl-acquired-cah`): `192.168.1.189`.
+- Bahmni VM (`rhl-central-hospital`, Phase 2): `192.168.1.230`.
 
-## Stage 3 — Firewall rules: allow only the onboarding flows  _(pending)_
+The agent targets these directly; no local DNS server (Gate J decision:
+static IPs + known addresses).
 
-Across the org boundary, allow **only**:
-- CAH Mirth (Host #2 VM) → HIE HAPI (Host #1, `:8080`) — the A1 federation
-  write path.
-- Control-plane admin: WinRM (Host #1 → Host #2) and SSH (control plane →
-  Host #2 OpenEMR VM).
+## Stage 3 — Expose HIE HAPI + firewall (done 2026-06-14)
 
-Everything else between the org segments is denied, and the denial is
-verified (the point is to *feel* the boundary, not bulldoze it). _Exact
-rules added once the OpenEMR VM IP exists._
+HAPI runs in WSL2 on Host #1 (NAT'd, localhost-only). For the CAH Mirth to
+write to it (federation A1), `infra/hyperv/Expose-HAPI-ToLAN.ps1` (elevated on
+Host #1) adds a `netsh` portproxy (host LAN `:8080` → WSL2 HAPI) and a
+firewall rule allowing inbound `8080` **only from `192.168.1.0/24`** — the
+single controlled CAH→HIE flow. Admin paths (WinRM Host #1→Host #2; SSH
+control plane→VMs) are the only other inter-host flows.
 
-## Validation  _(pending)_
+**Gotcha — portproxy targets the volatile WSL IP.** The WSL2 address
+(`172.27.x`) changes on WSL restart; re-run `Expose-HAPI-ToLAN.ps1` after a
+Host #1 reboot/WSL restart. Production delta: a real HIE FHIR endpoint has a
+routable address (no portproxy-over-NAT).
 
-- [ ] Control plane reaches Host #2 over WinRM.
-- [ ] Allowed flow works: CAH-segment → HIE HAPI `:8080`.
-- [ ] Disallowed flow is blocked (demonstrated, not assumed).
+## Validation (2026-06-14)
 
-## Rollback  _(pending — will cover removing rules, vSwitch, TrustedHosts)_
+- [x] Control plane reaches Host #2 over WinRM (`Invoke-Host2.ps1`).
+- [x] Allowed flow works: from the CAH VM,
+      `curl http://192.168.1.176:8080/fhir/metadata` → 200; the CAH Mirth
+      synced 15 patients into HAPI across the boundary.
+- [x] HAPI is not otherwise LAN-reachable (only the scoped `:8080` rule +
+      WSL portproxy expose it; default WSL services aren't LAN-visible).
+
+## Rollback
+
+```powershell
+# On Host #1 (elevated): remove the HAPI exposure
+netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=8080
+Remove-NetFirewallRule -DisplayName rhl-hie-hapi-8080
+# Remove WinRM trust (optional): Set-Item WSMan:\localhost\Client\TrustedHosts -Value '' -Force
+```
+```powershell
+# On Host #2 (elevated): remove the external vSwitch
+Remove-VMSwitch -Name rhl-lan-external -Force
+```
