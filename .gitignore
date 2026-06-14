@@ -38,3 +38,10 @@ infra/hyperv/**/*.iso
 *.swp
 .idea/
 .vscode/
+
+# OpenEMR OAuth client key + id (Phase 3a)
+scripts/.secrets/
+
+# Python bytecode
+__pycache__/
+*.pyc

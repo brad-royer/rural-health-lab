@@ -1,0 +1,335 @@
+{
+  "description": "OpenEMR (acquired CAH) seed panel - Phase 3a, Gate I / ADR 0008. Demographics reused from the Synthea rural-TX population; MRNs are CAH-issued and disjoint from all Synthea/HAPI/Bahmni identifiers, under https://lab.example/identifiers/openemr-cah. source_file is repo-side traceability only and is never sent to OpenEMR.",
+  "cross_ehr_overlap": "CAH-0001..0005 are the SAME Synthea humans as Bahmni BAH-0001..0005 (three-way duplicates: Synthea + Bahmni + OpenEMR, three disjoint identifier systems) - the hardest record-linkage case, handed to 3b MPI. CAH-0006..0015 are distinct (two-way: Synthea + OpenEMR).",
+  "identifier_system": "https://lab.example/identifiers/openemr-cah",
+  "patients": [
+    {
+      "mrn": "CAH-0001",
+      "source_file": "Abdul218_Schoen8_352cccfc-0946-b8f0-a793-a1897e7f48b6.json",
+      "overlaps_bahmni": true,
+      "bahmni_mrn": "BAH-0001",
+      "family": "Schoen8",
+      "given": [
+        "Abdul218",
+        "Leif534"
+      ],
+      "gender": "male",
+      "birthDate": "2000-05-16",
+      "address": {
+        "line": [
+          "386 Fay Junction"
+        ],
+        "city": "Lumberton",
+        "state": "TX",
+        "postalCode": "77625",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0002",
+      "source_file": "Akilah516_Vina438_Runolfsdottir785_b7a270c9-7e9f-60b1-e305-a7bbb72dbdb2.json",
+      "overlaps_bahmni": true,
+      "bahmni_mrn": "BAH-0002",
+      "family": "Runolfsdottir785",
+      "given": [
+        "Akilah516",
+        "Vina438"
+      ],
+      "gender": "female",
+      "birthDate": "1996-11-04",
+      "address": {
+        "line": [
+          "734 Schamberger Trace"
+        ],
+        "city": "Laredo",
+        "state": "TX",
+        "postalCode": "78043",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0003",
+      "source_file": "Alfonso758_Mondrag\u00f3n635_9bf7e9b4-a968-1398-067b-f56aca12d7c4.json",
+      "overlaps_bahmni": true,
+      "bahmni_mrn": "BAH-0003",
+      "family": "Mondrag\u00f3n635",
+      "given": [
+        "Alfonso758",
+        "David908"
+      ],
+      "gender": "male",
+      "birthDate": "1973-01-02",
+      "address": {
+        "line": [
+          "370 Lang Flat Unit 10"
+        ],
+        "city": "Lancaster",
+        "state": "TX",
+        "postalCode": "75241",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0004",
+      "source_file": "Amada498_Joellen497_Kub800_cdb9f2fd-bd2c-68a3-21dc-28653c4b62d5.json",
+      "overlaps_bahmni": true,
+      "bahmni_mrn": "BAH-0004",
+      "family": "Kub800",
+      "given": [
+        "Amada498",
+        "Joellen497"
+      ],
+      "gender": "female",
+      "birthDate": "1995-05-17",
+      "address": {
+        "line": [
+          "756 Gaylord Hollow"
+        ],
+        "city": "Frisco",
+        "state": "TX",
+        "postalCode": "75035",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0005",
+      "source_file": "Anita473_Catalina187_D\u00edaz674_2d950093-7ccd-c8c0-c61e-bb6865439601.json",
+      "overlaps_bahmni": true,
+      "bahmni_mrn": "BAH-0005",
+      "family": "D\u00edaz674",
+      "given": [
+        "Anita473",
+        "Catalina187"
+      ],
+      "gender": "female",
+      "birthDate": "1998-01-30",
+      "address": {
+        "line": [
+          "713 Heller Hollow"
+        ],
+        "city": "Austin",
+        "state": "TX",
+        "postalCode": "78750",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0006",
+      "source_file": "Classie132_Josie226_Ankunding277_ffbd34ed-a309-eba8-c5fd-333e21c3d902.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Ankunding277",
+      "given": [
+        "Classie132",
+        "Josie226"
+      ],
+      "gender": "female",
+      "birthDate": "1957-04-25",
+      "address": {
+        "line": [
+          "814 Lehner Orchard Apt 48"
+        ],
+        "city": "Victoria",
+        "state": "TX",
+        "postalCode": "77904",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0007",
+      "source_file": "Claude750_Koss676_c72586ef-2ca3-95af-8224-be4b6b943b95.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Koss676",
+      "given": [
+        "Claude750",
+        "Jeremy766"
+      ],
+      "gender": "male",
+      "birthDate": "2022-08-06",
+      "address": {
+        "line": [
+          "283 Dickens Mews Unit 1"
+        ],
+        "city": "Morgan's Point Resort",
+        "state": "TX",
+        "postalCode": "76513",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0008",
+      "source_file": "Collin529_Fisher429_19893c0c-103e-358e-d958-70fbf0876e0d.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Fisher429",
+      "given": [
+        "Collin529"
+      ],
+      "gender": "male",
+      "birthDate": "2018-09-27",
+      "address": {
+        "line": [
+          "699 Rath Ville Suite 5"
+        ],
+        "city": "Talco",
+        "state": "TX",
+        "postalCode": "75487",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0009",
+      "source_file": "Concetta811_Rosemary734_Rath779_e8da7ff3-5746-346d-b54c-591616289e35.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Rath779",
+      "given": [
+        "Concetta811",
+        "Rosemary734"
+      ],
+      "gender": "female",
+      "birthDate": "1962-06-30",
+      "address": {
+        "line": [
+          "363 Lubowitz Way Apt 23"
+        ],
+        "city": "Royse City",
+        "state": "TX",
+        "postalCode": "75173",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0010",
+      "source_file": "Courtney281_Von197_37b4c5d3-6813-0f6a-d6df-142dd9d0ffbc.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Von197",
+      "given": [
+        "Courtney281",
+        "Ward668"
+      ],
+      "gender": "male",
+      "birthDate": "2024-09-24",
+      "address": {
+        "line": [
+          "786 Pollich Branch"
+        ],
+        "city": "Dallas",
+        "state": "TX",
+        "postalCode": "75088",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0011",
+      "source_file": "Cristobal567_Montero62_85ec2fb8-05fe-b9c0-50c1-67635d842bfb.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Montero62",
+      "given": [
+        "Cristobal567",
+        "Felipe97"
+      ],
+      "gender": "male",
+      "birthDate": "1988-06-05",
+      "address": {
+        "line": [
+          "183 Streich Flat Unit 81"
+        ],
+        "city": "El Paso",
+        "state": "TX",
+        "postalCode": "79930",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0012",
+      "source_file": "Cyril535_Bosco882_1eadc56c-fdeb-fc79-5104-7ed919d717cf.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Bosco882",
+      "given": [
+        "Cyril535",
+        "Nigel915"
+      ],
+      "gender": "male",
+      "birthDate": "1971-06-25",
+      "address": {
+        "line": [
+          "269 Rempel Dam Suite 63"
+        ],
+        "city": "College Station",
+        "state": "TX",
+        "postalCode": "77802",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0013",
+      "source_file": "Danyelle408_Kling921_64ff526f-d87c-e3e7-15d4-a83b8b3f3623.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Kling921",
+      "given": [
+        "Danyelle408"
+      ],
+      "gender": "female",
+      "birthDate": "1974-02-28",
+      "address": {
+        "line": [
+          "985 Skiles Junction"
+        ],
+        "city": "Richardson",
+        "state": "TX",
+        "postalCode": "75082",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0014",
+      "source_file": "David908_Fahey393_be75c448-b47b-885b-fcc9-09472e5fe63a.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Fahey393",
+      "given": [
+        "David908",
+        "Isaias604"
+      ],
+      "gender": "male",
+      "birthDate": "1970-10-19",
+      "address": {
+        "line": [
+          "1015 Barton Vista"
+        ],
+        "city": "San Antonio",
+        "state": "TX",
+        "postalCode": "78220",
+        "country": "US"
+      }
+    },
+    {
+      "mrn": "CAH-0015",
+      "source_file": "Dominga527_Collier206_81f60023-440a-c8f3-a3db-1efd4ce2f862.json",
+      "overlaps_bahmni": false,
+      "bahmni_mrn": null,
+      "family": "Collier206",
+      "given": [
+        "Dominga527",
+        "Lorilee250"
+      ],
+      "gender": "female",
+      "birthDate": "1966-09-06",
+      "address": {
+        "line": [
+          "854 Schaden Village"
+        ],
+        "city": "Bunker Hill",
+        "state": "TX",
+        "postalCode": "77024",
+        "country": "US"
+      }
+    }
+  ]
+}
