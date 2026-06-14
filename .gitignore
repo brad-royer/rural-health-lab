@@ -30,6 +30,7 @@ synthea/.cache/
 # user-data, and seed ISOs (regenerable via
 # infra/hyperv/cloud-init/build-seed-iso.sh) plus downloaded install media
 infra/hyperv/cloud-init/.generated/
+infra/hyperv/.secrets/
 infra/hyperv/**/*.iso
 
 # OS / editor
