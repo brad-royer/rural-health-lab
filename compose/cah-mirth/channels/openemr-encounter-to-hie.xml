@@ -1,0 +1,383 @@
+<channel version="4.5.2">
+  <id>1c8777ff-709b-48e7-a87c-070a20ae27d5</id>
+  <nextMetaDataId>2</nextMetaDataId>
+  <name>OpenEMR Encounter to HIE</name>
+  <description>Phase 3a.5 (issue #31), federation A1, per Gate K (ADR 0009).
+The CAH Mirth polls OpenEMR's FHIR2 R4 Encounter endpoint (SMART Backend
+Services OAuth) and conditionally upserts each encounter into the HIE's HAPI
+across the cross-host boundary, keyed on Encounter.identifier under
+https://lab.example/identifiers/openemr-cah/encounter (value = OpenEMR
+encounter uuid). Subject resolved by identifier (OpenEMR subject -> CAH MRN ->
+HAPI Patient?identifier), never a hardcoded id. In-channel wait for the
+subject covers the encounter-before-patient race (2.5 lesson: thrown JS errors
+are terminal under Mirth's destination retry). Fully validated in 3a.6.</description>
+  <revision>1</revision>
+  <sourceConnector version="4.5.2">
+    <metaDataId>0</metaDataId>
+    <name>sourceConnector</name>
+    <properties class="com.mirth.connect.connectors.js.JavaScriptReceiverProperties" version="4.5.2">
+      <pluginProperties/>
+      <pollConnectorProperties version="4.5.2">
+        <pollingType>INTERVAL</pollingType>
+        <pollOnStart>true</pollOnStart>
+        <pollingFrequency>60000</pollingFrequency>
+        <pollingHour>0</pollingHour>
+        <pollingMinute>0</pollingMinute>
+        <cronJobs/>
+        <pollConnectorPropertiesAdvanced>
+          <weekly>true</weekly>
+          <inactiveDays>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+          </inactiveDays>
+          <dayOfMonth>1</dayOfMonth>
+          <allDay>true</allDay>
+          <startingHour>8</startingHour>
+          <startingMinute>0</startingMinute>
+          <endingHour>17</endingHour>
+          <endingMinute>0</endingMinute>
+        </pollConnectorPropertiesAdvanced>
+      </pollConnectorProperties>
+      <sourceConnectorProperties version="4.5.2">
+        <responseVariable>None</responseVariable>
+        <respondAfterProcessing>true</respondAfterProcessing>
+        <processBatch>false</processBatch>
+        <firstResponse>false</firstResponse>
+        <processingThreads>1</processingThreads>
+        <resourceIds class="linked-hash-map">
+          <entry>
+            <string>Default Resource</string>
+            <string>[Default Resource]</string>
+          </entry>
+        </resourceIds>
+        <queueBufferSize>1000</queueBufferSize>
+      </sourceConnectorProperties>
+      <script><![CDATA[
+// Poll OpenEMR's FHIR2 R4 Encounter endpoint via SMART Backend Services OAuth;
+// emit one raw FHIR Encounter JSON string per resource. Same auth/HTTP model
+// as the patient channel (Apache HttpClient; java.security RS384 JWT).
+var OPENEMR = 'https://192.168.1.189';
+var TOKEN_URL = OPENEMR + '/oauth2/default/token';
+var FHIR = OPENEMR + '/apis/default/fhir';
+var CLIENT_ID = 'K0Hj2DVInLZvhmtNV2ttLX8AMohtvUsbCxrXu6FGUXU';
+var KID = 'rhl-cin-hie-1';
+var KEY_PATH = '/opt/connect/openemr-client-key.pem';
+var SCOPE = 'openid api:fhir system/Patient.read system/Encounter.read';
+
+function strBytes(s) { return new java.lang.String(s).getBytes('UTF-8'); }
+function b64url(b) { return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(b); }
+function loadKey() {
+    var pem = new java.lang.String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(KEY_PATH)), 'UTF-8');
+    var b64 = pem.replace('-----BEGIN PRIVATE KEY-----', '').replace('-----END PRIVATE KEY-----', '').replaceAll('\\s', '');
+    var spec = new java.security.spec.PKCS8EncodedKeySpec(java.util.Base64.getDecoder().decode(b64));
+    return java.security.KeyFactory.getInstance('RSA').generatePrivate(spec);
+}
+function assertion() {
+    var now = Math.floor(java.lang.System.currentTimeMillis() / 1000);
+    var h = b64url(strBytes(JSON.stringify({ alg: 'RS384', kid: KID, typ: 'JWT' })));
+    var p = b64url(strBytes(JSON.stringify({ iss: CLIENT_ID, sub: CLIENT_ID, aud: TOKEN_URL,
+        jti: java.util.UUID.randomUUID().toString(), iat: now, exp: now + 300 })));
+    var input = h + '.' + p;
+    var sig = java.security.Signature.getInstance('SHA384withRSA');
+    sig.initSign(loadKey()); sig.update(strBytes(input));
+    return input + '.' + b64url(sig.sign());
+}
+function client() {
+    var ssl = org.apache.http.ssl.SSLContexts.custom()
+        .loadTrustMaterial(null, new org.apache.http.conn.ssl.TrustStrategy({ isTrusted: function(c, a) { return true; } })).build();
+    var cfg = org.apache.http.client.config.RequestConfig.custom().setConnectTimeout(10000).setSocketTimeout(30000).build();
+    return org.apache.http.impl.client.HttpClients.custom().setSSLContext(ssl)
+        .setSSLHostnameVerifier(org.apache.http.conn.ssl.NoopHostnameVerifier.INSTANCE).setDefaultRequestConfig(cfg).build();
+}
+function token(c) {
+    var post = new org.apache.http.client.methods.HttpPost(TOKEN_URL);
+    var ps = new java.util.ArrayList();
+    ps.add(new org.apache.http.message.BasicNameValuePair('grant_type', 'client_credentials'));
+    ps.add(new org.apache.http.message.BasicNameValuePair('scope', SCOPE));
+    ps.add(new org.apache.http.message.BasicNameValuePair('client_assertion_type', 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'));
+    ps.add(new org.apache.http.message.BasicNameValuePair('client_assertion', assertion()));
+    post.setEntity(new org.apache.http.client.entity.UrlEncodedFormEntity(ps, 'UTF-8'));
+    var r = c.execute(post);
+    try {
+        var s = r.getStatusLine().getStatusCode();
+        var b = String(org.apache.http.util.EntityUtils.toString(r.getEntity(), 'UTF-8'));
+        if (s != 200) { throw 'token HTTP ' + s + ': ' + b.substring(0, 300); }
+        return JSON.parse(b).access_token;
+    } finally { r.close(); }
+}
+function fget(c, url, tok) {
+    var g = new org.apache.http.client.methods.HttpGet(url);
+    g.setHeader('Authorization', 'Bearer ' + tok); g.setHeader('Accept', 'application/fhir+json');
+    var r = c.execute(g);
+    try {
+        var s = r.getStatusLine().getStatusCode();
+        var b = String(org.apache.http.util.EntityUtils.toString(r.getEntity(), 'UTF-8'));
+        if (s != 200) { throw 'GET ' + url + ' HTTP ' + s + ': ' + b.substring(0, 300); }
+        return JSON.parse(b);
+    } finally { r.close(); }
+}
+
+var messages = new java.util.ArrayList();
+var c = client();
+try {
+    var tok = token(c);
+    var url = FHIR + '/Encounter?_count=100';
+    var pages = 0;
+    while (url && pages < 20) {
+        var bundle = fget(c, url, tok);
+        var entries = bundle.entry || [];
+        for (var i = 0; i < entries.length; i++) { messages.add(JSON.stringify(entries[i].resource)); }
+        url = null;
+        var links = bundle.link || [];
+        for (var j = 0; j < links.length; j++) { if (links[j].relation == 'next') { url = links[j].url; } }
+        pages++;
+    }
+} finally { c.close(); }
+
+return messages;
+]]></script>
+    </properties>
+    <transformer version="4.5.2">
+      <elements/>
+      <inboundDataType>RAW</inboundDataType>
+      <outboundDataType>RAW</outboundDataType>
+      <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+          <splitType>JavaScript</splitType>
+          <batchScript/>
+        </batchProperties>
+      </inboundProperties>
+      <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+          <splitType>JavaScript</splitType>
+          <batchScript/>
+        </batchProperties>
+      </outboundProperties>
+    </transformer>
+    <filter version="4.5.2">
+      <elements/>
+    </filter>
+    <transportName>JavaScript Reader</transportName>
+    <mode>SOURCE</mode>
+    <enabled>true</enabled>
+    <waitForPrevious>true</waitForPrevious>
+  </sourceConnector>
+  <destinationConnectors>
+    <connector version="4.5.2">
+      <metaDataId>1</metaDataId>
+      <name>HAPI conditional upsert</name>
+      <properties class="com.mirth.connect.connectors.js.JavaScriptDispatcherProperties" version="4.5.2">
+        <pluginProperties/>
+        <destinationConnectorProperties version="4.5.2">
+          <queueEnabled>false</queueEnabled>
+          <sendFirst>false</sendFirst>
+          <retryIntervalMillis>10000</retryIntervalMillis>
+          <regenerateTemplate>false</regenerateTemplate>
+          <retryCount>0</retryCount>
+          <rotate>false</rotate>
+          <includeFilterTransformer>false</includeFilterTransformer>
+          <threadCount>1</threadCount>
+          <threadAssignmentVariable/>
+          <validateResponse>false</validateResponse>
+          <resourceIds class="linked-hash-map">
+            <entry>
+              <string>Default Resource</string>
+              <string>[Default Resource]</string>
+            </entry>
+          </resourceIds>
+          <queueBufferSize>1000</queueBufferSize>
+          <reattachAttachments>true</reattachAttachments>
+        </destinationConnectorProperties>
+        <script><![CDATA[
+// Resolve the subject by identifier (never a hardcoded id), then conditionally
+// upsert the Encounter into HAPI keyed on the OpenEMR encounter uuid under the
+// encounter provenance system. In-channel wait for the subject (up to 90s)
+// covers the encounter-before-patient race (2.5: thrown JS errors are
+// terminal under Mirth's destination retry).
+var OPENEMR = 'https://192.168.1.189';
+var TOKEN_URL = OPENEMR + '/oauth2/default/token';
+var FHIR = OPENEMR + '/apis/default/fhir';
+var CLIENT_ID = 'K0Hj2DVInLZvhmtNV2ttLX8AMohtvUsbCxrXu6FGUXU';
+var KID = 'rhl-cin-hie-1';
+var KEY_PATH = '/opt/connect/openemr-client-key.pem';
+var SCOPE = 'openid api:fhir system/Patient.read system/Encounter.read';
+var HAPI = 'http://192.168.1.176:8080/fhir';
+var PATIENT_SYSTEM = 'https://lab.example/identifiers/openemr-cah';
+var ENC_SYSTEM = 'https://lab.example/identifiers/openemr-cah/encounter';
+
+function strBytes(s) { return new java.lang.String(s).getBytes('UTF-8'); }
+function b64url(b) { return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(b); }
+function loadKey() {
+    var pem = new java.lang.String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(KEY_PATH)), 'UTF-8');
+    var b64 = pem.replace('-----BEGIN PRIVATE KEY-----', '').replace('-----END PRIVATE KEY-----', '').replaceAll('\\s', '');
+    return java.security.KeyFactory.getInstance('RSA').generatePrivate(new java.security.spec.PKCS8EncodedKeySpec(java.util.Base64.getDecoder().decode(b64)));
+}
+function assertion() {
+    var now = Math.floor(java.lang.System.currentTimeMillis() / 1000);
+    var h = b64url(strBytes(JSON.stringify({ alg: 'RS384', kid: KID, typ: 'JWT' })));
+    var p = b64url(strBytes(JSON.stringify({ iss: CLIENT_ID, sub: CLIENT_ID, aud: TOKEN_URL, jti: java.util.UUID.randomUUID().toString(), iat: now, exp: now + 300 })));
+    var input = h + '.' + p;
+    var sig = java.security.Signature.getInstance('SHA384withRSA'); sig.initSign(loadKey()); sig.update(strBytes(input));
+    return input + '.' + b64url(sig.sign());
+}
+function newClient(trustAll) {
+    var b = org.apache.http.impl.client.HttpClients.custom()
+        .setDefaultRequestConfig(org.apache.http.client.config.RequestConfig.custom().setConnectTimeout(10000).setSocketTimeout(30000).build());
+    if (trustAll) {
+        b.setSSLContext(org.apache.http.ssl.SSLContexts.custom().loadTrustMaterial(null, new org.apache.http.conn.ssl.TrustStrategy({ isTrusted: function(c, a) { return true; } })).build());
+        b.setSSLHostnameVerifier(org.apache.http.conn.ssl.NoopHostnameVerifier.INSTANCE);
+    }
+    return b.build();
+}
+function exec(c, req, oks) {
+    var r = c.execute(req);
+    try {
+        var s = r.getStatusLine().getStatusCode();
+        var b = String(org.apache.http.util.EntityUtils.toString(r.getEntity(), 'UTF-8'));
+        if (oks.indexOf(s) < 0) { throw req.getMethod() + ' ' + req.getURI() + ' HTTP ' + s + ': ' + b.substring(0, 400); }
+        return b;
+    } finally { r.close(); }
+}
+function oeToken(c) {
+    var post = new org.apache.http.client.methods.HttpPost(TOKEN_URL);
+    var ps = new java.util.ArrayList();
+    ps.add(new org.apache.http.message.BasicNameValuePair('grant_type', 'client_credentials'));
+    ps.add(new org.apache.http.message.BasicNameValuePair('scope', SCOPE));
+    ps.add(new org.apache.http.message.BasicNameValuePair('client_assertion_type', 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'));
+    ps.add(new org.apache.http.message.BasicNameValuePair('client_assertion', assertion()));
+    post.setEntity(new org.apache.http.client.entity.UrlEncodedFormEntity(ps, 'UTF-8'));
+    return JSON.parse(exec(c, post, [200])).access_token;
+}
+
+var src = JSON.parse(connectorMessage.getRawData());
+var encId = src.id;
+var subjRef = src.subject && src.subject.reference;
+if (!subjRef || subjRef.indexOf('Patient/') < 0) { throw 'Encounter ' + encId + ' has no Patient subject'; }
+
+// Step 1: OpenEMR subject -> CAH MRN (pubpid identifier value).
+var oe = newClient(true);
+var mrn = null;
+try {
+    var tok = oeToken(oe);
+    var get = new org.apache.http.client.methods.HttpGet(FHIR + '/' + subjRef);
+    get.setHeader('Authorization', 'Bearer ' + tok); get.setHeader('Accept', 'application/fhir+json');
+    var subj = JSON.parse(exec(oe, get, [200]));
+    var ids = subj.identifier || [];
+    for (var i = 0; i < ids.length; i++) { if (ids[i].value && String(ids[i].value).indexOf('CAH-') === 0) { mrn = ids[i].value; } }
+    if (!mrn && ids.length > 0) { mrn = ids[0].value; }
+} finally { oe.close(); }
+if (!mrn) { throw 'Subject ' + subjRef + ' has no resolvable MRN'; }
+
+// Step 2: MRN -> HAPI Patient id, by identifier search. Wait up to 90s for the
+// patient channel to have synced the subject (terminal-error race, 2.5).
+var hapi = newClient(false);
+try {
+    var hapiPatientId = null;
+    for (var attempt = 0; attempt < 10 && !hapiPatientId; attempt++) {
+        if (attempt > 0) { java.lang.Thread.sleep(10000); }
+        var look = new org.apache.http.client.methods.HttpGet(HAPI + '/Patient?identifier=' + encodeURIComponent(PATIENT_SYSTEM + '|' + mrn));
+        look.setHeader('Accept', 'application/fhir+json');
+        var found = JSON.parse(exec(hapi, look, [200]));
+        if (found.total && found.total >= 1) { hapiPatientId = found.entry[0].resource.id; }
+    }
+    if (!hapiPatientId) { throw 'Subject ' + mrn + ' not in HIE after 90s (patient channel lagging?)'; }
+
+    function stripIds(arr) {
+        var out = [];
+        for (var i = 0; i < (arr || []).length; i++) { var c = JSON.parse(JSON.stringify(arr[i])); delete c.id; out.push(c); }
+        return out;
+    }
+    var target = {
+        resourceType: 'Encounter',
+        identifier: [{ system: ENC_SYSTEM, value: encId }],
+        status: src.status,
+        'class': src['class'],
+        type: stripIds(src.type),
+        period: src.period,
+        subject: { reference: 'Patient/' + hapiPatientId }
+    };
+    var put = new org.apache.http.client.methods.HttpPut(HAPI + '/Encounter?identifier=' + encodeURIComponent(ENC_SYSTEM + '|' + encId));
+    put.setHeader('Content-Type', 'application/fhir+json');
+    put.setEntity(new org.apache.http.entity.StringEntity(JSON.stringify(target), 'UTF-8'));
+    exec(hapi, put, [200, 201]);
+    return 'upserted encounter ' + encId + ' (subject ' + mrn + ')';
+} finally { hapi.close(); }
+]]></script>
+      </properties>
+      <transformer version="4.5.2">
+        <elements/>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript/>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript/>
+          </batchProperties>
+        </outboundProperties>
+      </transformer>
+      <responseTransformer version="4.5.2">
+        <elements/>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript/>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript/>
+          </batchProperties>
+        </outboundProperties>
+      </responseTransformer>
+      <filter version="4.5.2">
+        <elements/>
+      </filter>
+      <transportName>JavaScript Writer</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>true</waitForPrevious>
+    </connector>
+  </destinationConnectors>
+  <preprocessingScript>return message;</preprocessingScript>
+  <postprocessingScript>return;</postprocessingScript>
+  <deployScript>return;</deployScript>
+  <undeployScript>return;</undeployScript>
+  <properties version="4.5.2">
+    <clearGlobalChannelMap>true</clearGlobalChannelMap>
+    <messageStorageMode>PRODUCTION</messageStorageMode>
+    <encryptData>false</encryptData>
+    <encryptAttachments>false</encryptAttachments>
+    <encryptCustomMetaData>false</encryptCustomMetaData>
+    <removeContentOnCompletion>false</removeContentOnCompletion>
+    <removeOnlyFilteredOnCompletion>false</removeOnlyFilteredOnCompletion>
+    <removeAttachmentsOnCompletion>false</removeAttachmentsOnCompletion>
+    <initialState>STARTED</initialState>
+    <storeAttachments>false</storeAttachments>
+    <metaDataColumns/>
+    <attachmentProperties version="4.5.2">
+      <type>None</type>
+      <properties/>
+    </attachmentProperties>
+    <resourceIds class="linked-hash-map">
+      <entry>
+        <string>Default Resource</string>
+        <string>[Default Resource]</string>
+      </entry>
+    </resourceIds>
+  </properties>
+</channel>
