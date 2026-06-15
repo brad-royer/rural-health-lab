@@ -1,0 +1,19 @@
+{
+  "version": "1",
+  "mdmTypes": ["Patient"],
+  "candidateSearchParams": [
+    { "resourceType": "Patient", "searchParams": ["birthdate"] }
+  ],
+  "candidateFilterSearchParams": [],
+  "matchFields": [
+    { "name": "given-exact",  "resourceType": "Patient", "resourcePath": "name.given",  "matcher": { "algorithm": "STRING" } },
+    { "name": "family-exact", "resourceType": "Patient", "resourcePath": "name.family", "matcher": { "algorithm": "STRING" } },
+    { "name": "birthdate",    "resourceType": "Patient", "resourcePath": "birthDate",   "matcher": { "algorithm": "STRING" } },
+    { "name": "gender",       "resourceType": "Patient", "resourcePath": "gender",      "matcher": { "algorithm": "STRING" } }
+  ],
+  "matchResultMap": {
+    "given-exact,family-exact,birthdate,gender": "MATCH",
+    "given-exact,family-exact,birthdate": "POSSIBLE_MATCH"
+  },
+  "eidSystem": "https://lab.example/identifiers/hie-eid"
+}
