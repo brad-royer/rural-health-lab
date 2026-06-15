@@ -99,6 +99,14 @@ services:
     environment:
       hapi.fhir.default_encoding: json
 
+  hie-subscriber:
+    # Phase 3b.3: receives HAPI rest-hook Encounter notifications (CMS 24h
+    # simulation) and timestamps them. Reachable from HAPI on the compose
+    # network at http://hie-subscriber:9000.
+    build: ./subscriber
+    container_name: hie-subscriber
+    restart: unless-stopped
+
   mirth:
     image: nextgenhealthcare/connect:4.5.2
     container_name: mirth

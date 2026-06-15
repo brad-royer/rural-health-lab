@@ -1,0 +1,11 @@
+{
+  "resourceType": "Subscription",
+  "status": "requested",
+  "reason": "CMS encounter-notification-within-24h simulation (Phase 3b.3, Gate M). Notifies the HIE subscriber on every Encounter create/update so latency can be measured (lab: simulate + measure, not enforce).",
+  "criteria": "Encounter?status=planned,arrived,triaged,in-progress,onleave,finished,cancelled,entered-in-error,unknown",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "http://hie-subscriber:9000/notify",
+    "payload": "application/fhir+json"
+  }
+}
