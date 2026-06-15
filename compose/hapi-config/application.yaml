@@ -1,0 +1,15 @@
+# HAPI HIE config overlay (Phase 3b.1) — layered onto the starter's defaults
+# via SPRING_CONFIG_ADDITIONAL_LOCATION, so only these keys change. Datasource
+# stays in compose env (keeps the Postgres password out of the repo).
+#
+# Enables MDM (link-not-merge) for record linkage across the three-way
+# duplicate cohort, and the rest-hook subscription channel MDM depends on
+# (which 3b.3's Encounter notification will also build on).
+hapi:
+  fhir:
+    mdm_enabled: true
+    # Spring ResourceLoader: needs the file: prefix, else it's read as a
+    # classpath resource (and the mounted file isn't on the classpath).
+    mdm_rules_json_location: "file:/configs/mdm-rules.json"
+    subscription:
+      resthook_enabled: true
