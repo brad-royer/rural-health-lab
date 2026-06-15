@@ -5,6 +5,9 @@
 # Enables MDM (link-not-merge) for record linkage across the three-way
 # duplicate cohort, and the rest-hook subscription channel MDM depends on
 # (which 3b.3's Encounter notification will also build on).
+logging:
+  level:
+    ca.uhn.fhir.log.mdm_troubleshooting: DEBUG
 hapi:
   fhir:
     mdm_enabled: true
