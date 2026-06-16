@@ -99,6 +99,25 @@ services:
     environment:
       hapi.fhir.default_encoding: json
 
+  keycloak:
+    # Phase 3b.5: identity provider for the HIE boundary. Per-participant
+    # client_credentials clients (realm-export.json) authenticate the Mirths to
+    # HAPI in 3b.6. Dev mode + realm import; data volume persists the
+    # Keycloak-generated client secrets across restarts. Admin password from
+    # gitignored .env (no secret in the repo). Host port 8090 (HAPI owns 8080).
+    image: keycloak/keycloak:26.6.3
+    container_name: keycloak
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    ports:
+      - "8090:8080"
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      - ./keycloak:/opt/keycloak/data/import:ro
+
   hie-subscriber:
     # Phase 3b.3: receives HAPI rest-hook Encounter notifications (CMS 24h
     # simulation) and timestamps them. Reachable from HAPI on the compose
@@ -121,3 +140,4 @@ services:
 volumes:
   hapi-db-data:
   mirth-appdata:
+  keycloak-data:
