@@ -160,6 +160,9 @@ services:
       VMOPTIONS: -Xmx512m
     volumes:
       - mirth-appdata:/opt/connect/appdata
+      # Phase 3b.6: central-hospital-mirth Keycloak client secret (gitignored)
+      # so the Bahmni channels can fetch a token to present to the HIE gateway.
+      - ./mirth/secrets/keycloak-client-secret.txt:/opt/connect/keycloak-client-secret.txt:ro
 
 volumes:
   hapi-db-data:

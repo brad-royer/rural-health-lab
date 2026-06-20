@@ -226,6 +226,28 @@ return messages;
 var HAPI = 'http://192.168.1.176:8080/fhir';
 var SYSTEM = 'https://lab.example/identifiers/openemr-cah';
 
+// Phase 3b.6: fetch a token for the HIE gateway (this participant's Keycloak
+// client_credentials client). The HAPI write now goes through the OAuth
+// gateway, so each write presents a Bearer token.
+var HIE_TOKEN_URL = 'http://192.168.1.176:8090/realms/rural-health-hie/protocol/openid-connect/token';
+var HIE_CLIENT_ID = 'acquired-cah-mirth';
+function hieToken() {
+    var sec = new java.lang.String(java.nio.file.Files.readAllBytes(
+        java.nio.file.Paths.get('/opt/connect/keycloak-client-secret.txt')), 'UTF-8').trim();
+    var kc = org.apache.http.impl.client.HttpClients.createDefault();
+    try {
+        var post = new org.apache.http.client.methods.HttpPost(HIE_TOKEN_URL);
+        var ps = new java.util.ArrayList();
+        ps.add(new org.apache.http.message.BasicNameValuePair('grant_type', 'client_credentials'));
+        ps.add(new org.apache.http.message.BasicNameValuePair('client_id', HIE_CLIENT_ID));
+        ps.add(new org.apache.http.message.BasicNameValuePair('client_secret', sec));
+        post.setEntity(new org.apache.http.client.entity.UrlEncodedFormEntity(ps, 'UTF-8'));
+        var r = kc.execute(post);
+        try { return JSON.parse(String(org.apache.http.util.EntityUtils.toString(r.getEntity(), 'UTF-8'))).access_token; }
+        finally { r.close(); }
+    } finally { kc.close(); }
+}
+
 var src = JSON.parse(connectorMessage.getRawData());
 
 // OpenEMR exposes the CAH MRN (pubpid) as the patient identifier value. Prefer
@@ -265,6 +287,7 @@ try {
     var cond = 'identifier=' + encodeURIComponent(SYSTEM + '|' + mrn);
     var put = new org.apache.http.client.methods.HttpPut(HAPI + '/Patient?' + cond);
     put.setHeader('Content-Type', 'application/fhir+json');
+    put.setHeader('Authorization', 'Bearer ' + hieToken());
     put.setEntity(new org.apache.http.entity.StringEntity(JSON.stringify(target), 'UTF-8'));
     var resp = client.execute(put);
     try {

@@ -187,9 +187,32 @@ return messages;
 var BAHMNI = 'https://192.168.1.230/openmrs/ws/fhir2/R4';
 var AUTH = 'Basic ' + java.util.Base64.getEncoder().encodeToString(
     new java.lang.String('superman:Admin123').getBytes('UTF-8'));
-var HAPI = 'http://hapi-hub:8080/fhir';
+// Phase 3b.6: write through the HIE OAuth gateway (was hapi-hub direct).
+var HAPI = 'http://hie-gateway:8080/fhir';
 var PATIENT_SYSTEM = 'https://lab.example/identifiers/bahmni-central';
 var ENCOUNTER_SYSTEM = 'https://lab.example/identifiers/bahmni-central/encounter';
+
+// HIE gateway token (fetched once per message; used on the subject-lookup GET
+// and the Encounter PUT).
+var HIE_TOKEN_URL = 'http://keycloak:8080/realms/rural-health-hie/protocol/openid-connect/token';
+var HIE_CLIENT_ID = 'central-hospital-mirth';
+function hieToken() {
+    var sec = new java.lang.String(java.nio.file.Files.readAllBytes(
+        java.nio.file.Paths.get('/opt/connect/keycloak-client-secret.txt')), 'UTF-8').trim();
+    var kc = org.apache.http.impl.client.HttpClients.createDefault();
+    try {
+        var post = new org.apache.http.client.methods.HttpPost(HIE_TOKEN_URL);
+        var ps = new java.util.ArrayList();
+        ps.add(new org.apache.http.message.BasicNameValuePair('grant_type', 'client_credentials'));
+        ps.add(new org.apache.http.message.BasicNameValuePair('client_id', HIE_CLIENT_ID));
+        ps.add(new org.apache.http.message.BasicNameValuePair('client_secret', sec));
+        post.setEntity(new org.apache.http.client.entity.UrlEncodedFormEntity(ps, 'UTF-8'));
+        var r = kc.execute(post);
+        try { return JSON.parse(String(org.apache.http.util.EntityUtils.toString(r.getEntity(), 'UTF-8'))).access_token; }
+        finally { r.close(); }
+    } finally { kc.close(); }
+}
+var HIE_TOKEN = hieToken();
 
 function newClient(trustAll) {
     var builder = org.apache.http.impl.client.HttpClients.custom()
@@ -279,6 +302,7 @@ try {
         var lookup = new org.apache.http.client.methods.HttpGet(HAPI + '/Patient?identifier='
             + encodeURIComponent(PATIENT_SYSTEM + '|' + mrn));
         lookup.setHeader('Accept', 'application/fhir+json');
+        lookup.setHeader('Authorization', 'Bearer ' + HIE_TOKEN);
         var found = JSON.parse(execute(hapiClient, lookup, [200]));
         if (found.total && found.total >= 1) {
             hapiPatientId = found.entry[0].resource.id;
@@ -305,6 +329,7 @@ try {
     var put = new org.apache.http.client.methods.HttpPut(HAPI + '/Encounter?identifier='
         + encodeURIComponent(ENCOUNTER_SYSTEM + '|' + encId));
     put.setHeader('Content-Type', 'application/fhir+json');
+    put.setHeader('Authorization', 'Bearer ' + HIE_TOKEN);
     put.setEntity(new org.apache.http.entity.StringEntity(JSON.stringify(target), 'UTF-8'));
     execute(hapiClient, put, [200, 201]);
     return 'upserted encounter ' + encId + ' (subject ' + mrn + ')';
