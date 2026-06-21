@@ -112,11 +112,35 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      # Phase 3b.6: pin the token issuer to the LAN URL so every participant
+      # (central Mirth via the compose net, CAH Mirth via the LAN) gets the
+      # same `iss`, which the HIE gateway validates. KC_HOSTNAME_STRICT=false
+      # keeps dev-mode backchannel token requests (http://keycloak:8080) working.
+      KC_HOSTNAME: http://192.168.1.176:8090
+      KC_HOSTNAME_STRICT: "false"
     ports:
       - "8090:8080"
     volumes:
       - keycloak-data:/opt/keycloak/data
       - ./keycloak:/opt/keycloak/data/import:ro
+
+  hie-gateway:
+    # Phase 3b.6: OAuth enforcement at the participant write boundary. Validates
+    # Keycloak JWTs and reverse-proxies to HAPI; this (not HAPI) is what the LAN
+    # portproxy points at. HAPI's own :8080 stays for internal control-plane
+    # reads. (Gate N / ADR 0012.)
+    build: ./hie-gateway
+    container_name: hie-gateway
+    restart: unless-stopped
+    depends_on:
+      - hapi-hub
+      - keycloak
+    environment:
+      HAPI_BASE: http://hapi-hub:8080
+      EXPECTED_ISSUER: http://192.168.1.176:8090/realms/rural-health-hie
+      JWKS_URL: http://keycloak:8080/realms/rural-health-hie/protocol/openid-connect/certs
+    ports:
+      - "8085:8080"   # 8080=hapi, 8081/8082=spokes, 8443=mirth, 8090=keycloak
 
   hie-subscriber:
     # Phase 3b.3: receives HAPI rest-hook Encounter notifications (CMS 24h
@@ -136,6 +160,9 @@ services:
       VMOPTIONS: -Xmx512m
     volumes:
       - mirth-appdata:/opt/connect/appdata
+      # Phase 3b.6: central-hospital-mirth Keycloak client secret (gitignored)
+      # so the Bahmni channels can fetch a token to present to the HIE gateway.
+      - ./mirth/secrets/keycloak-client-secret.txt:/opt/connect/keycloak-client-secret.txt:ro
 
 volumes:
   hapi-db-data:

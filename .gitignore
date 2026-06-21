@@ -45,3 +45,7 @@ scripts/.secrets/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Keycloak client secrets staged into Mirth (Phase 3b.6)
+compose/mirth/secrets/
+compose/cah-mirth/secrets/
