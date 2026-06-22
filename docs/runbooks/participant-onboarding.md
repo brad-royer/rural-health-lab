@@ -126,6 +126,18 @@ Channels committed as XML with fixed ids + a deploy script.
 > in-channel (`java.security`) for SMART OAuth; writes to HAPI **across the
 > cross-host boundary**. Both: Apache HttpClient, not `java.net.URL` (Java 17).
 
+**Authenticate to the HIE boundary (Phase 3b).** The participant gets a
+Keycloak `client_credentials` client in the HIE realm; its Mirth channels
+fetch a token (client secret mounted, gitignored) and present `Bearer` on
+every HAPI call. The HIE write boundary is a **JWT-validating gateway** in
+front of HAPI — so the sink target is the gateway, not HAPI directly, and
+unauthenticated writes are rejected (401). The token issuer is pinned
+(`KC_HOSTNAME`) so it's consistent whichever host requests it.
+
+> Both: `phase3b-keycloak.md` (realm + per-participant clients) and
+> `phase3b-hapi-oauth.md` (gateway, issuer, channel token-wiring). Gate N /
+> ADR 0012.
+
 ### 6. Verify the onboarding
 
 Run `scripts/verify-onboarding.py --ehr <participant>`: a same-human patient +
@@ -150,11 +162,13 @@ condition **called out as intentional**. The EHR-specific operations are a
 
 ## Production delta (what this lab skips that production requires)
 
-- **AuthN/AuthZ at the HIE boundary**: participants should authenticate to the
-  HIE (OAuth client-credentials / mTLS). This lab writes to HAPI
-  unauthenticated behind a subnet firewall rule — **Keycloak arrives in Phase
-  3b** to model per-participant auth. (Source-side EHR OAuth, e.g. OpenEMR's,
-  is already real and internal to the participant.)
+- **AuthN/AuthZ at the HIE boundary — implemented (Phase 3b).** Participants
+  authenticate to the HIE with Keycloak `client_credentials` tokens, validated
+  by a JWT-validating gateway in front of HAPI; unauthenticated writes are
+  rejected (401). (Source-side EHR OAuth, e.g. OpenEMR's, was already real and
+  internal to the participant.) Remaining hardening still delta:
+  audience/scope-restricted tokens, mTLS, prod-mode Keycloak with TLS + secret
+  rotation, and human IAL2/AAL2 flows (→ ID.me, Phase 5).
 - **Transport/routing**: self-signed certs, trust-all in channels, and
   portproxy-over-WSL-NAT for the HIE endpoint are lab artifacts; production
   wants CA certs, a routable HIE address, and pfSense-style inter-org routing
@@ -163,9 +177,12 @@ condition **called out as intentional**. The EHR-specific operations are a
   private key as a mounted file; production wants a secrets manager.
 - **BAAs / data-sharing agreements**; **audit logging & retention** (Mirth
   message store unpruned, HAPI unaudited).
-- **Identifier-system registry & MPI**: participant URIs live in channel
-  transforms, and duplicate persons (now three-way) are surfaced, not
-  reconciled — Phase 3b (`docs/phase3-parking-lot.md`).
+- **Identifier-system registry & MPI — MPI implemented (Phase 3b).** Duplicate
+  persons (now three-way) are reconciled by HAPI MDM (link-not-merge: golden
+  records + `Patient.link`, demographics-matched), not just surfaced
+  (`phase3b-hapi-mdm.md`, `phase3b-mdm-linkage.md` / Gate L / ADR 0010).
+  Participant identifier-system URIs still live in channel transforms rather
+  than a central registry — that registry remains delta.
 
 ## Related
 
